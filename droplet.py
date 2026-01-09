@@ -31,4 +31,6 @@ class DROPLET:
         theta = vec[2*n:3*n]
         return DROPLET(n, L, s, x, y, theta)
 
-
+    
+    class CONSTRUCTORS:
+        def make_circular_pressure_eq():

@@ -1,0 +1,75 @@
+import numpy as np
+import sympy
+
+class heightscape:
+    def __init__(self, h, hx, hy, hxx, hxy, hyy, H):
+        self.h = h
+        self.hx = hx
+        self.hy = hy
+        self.hxx = hxx
+        self.hxy = hxy
+        self.hyy = hyy
+        self.H = H
+
+    def from_poly(poly_str):
+        # Get the h functions
+        h_expr = sympy.sympify(poly_str)
+        hx_expr = sympy.diff(poly_str, 'x')
+        hy_expr = sympy.diff(poly_str, 'y')
+        hxx_expr = sympy.diff(hx_expr, 'x')
+        hxy_expr = sympy.diff(hx_expr, 'y')
+        hyy_expr = sympy.diff(hy_expr, 'y')
+        H_expr = sympy.integrate(h_expr, ('x', 0, 'x'))
+
+        # Now get the functions
+        h_funct = sympy.lambdify(('x', 'y'), h_expr)
+        hx_funct = sympy.lambdify(('x', 'y'), hx_expr)
+        hy_funct = sympy.lambdify(('x', 'y'), hy_expr)
+        hxx_funct = sympy.lambdify(('x', 'y'), hxx_expr)
+        hxy_funct = sympy.lambdify(('x', 'y'), hxy_expr)
+        hyy_funct = sympy.lambdify(('x', 'y'), hyy_expr)
+        H_funct = sympy.lambdify(('x', 'y'), H_expr)
+
+        return heightscape(h_funct, hx_funct, hy_funct,
+                           hxx_funct, hxy_funct, hyy_funct,
+                           H_funct)
+
+    def rect_interp_polystr(L, W, hbr, htr, htl, hbl):
+        # Define the symbolic variables
+        x, y = sympy.symbols('x y')
+
+        # Define the physical coordinates of the rectangle corners
+        x1, x2 = -L/2, L/2
+        y1, y2 = -W/2, W/2
+
+                # Define bilinear basis functions
+        N1 = (x2 - x)*(y2 - y)/((x2 - x1)*(y2 - y1))  # Bottom left (hbl)
+        N2 = (x - x1)*(y2 - y)/((x2 - x1)*(y2 - y1))  # Bottom right (hbr)
+        N3 = (x - x1)*(y - y1)/((x2 - x1)*(y2 - y1))  # Top right (htr)
+        N4 = (x2 - x)*(y - y1)/((x2 - x1)*(y2 - y1))  # Top left (htl)
+
+        # Bilinear interpolant as a weighted sum of basis functions
+        h = hbl * N1 + hbr * N2 + htr * N3 + htl * N4
+
+        # Get the coeffcients that we want
+        h0 = h.evalf(subs={x:0, y:0})
+        hx = h.diff(x).evalf(subs={x:0, y:0})
+        hy = h.diff(y).evalf(subs={x:0, y:0})
+        hxy = h.diff(x).diff(y).evalf(subs={x:0, y:0})
+
+        # Get the resulting string
+        res_str = f'{h0} + {hx} * x + {hy} * y + {hxy} * x * y'
+        return res_str
+
+    def rect_interp_htscape(bd_region, h_vals):
+        # Unpack the input values
+        L, W = bd_region
+        hbr, htr, htl, hbl = h_vals
+
+        # Get the height polynomial
+        h_poly = heightscape.rect_interp_polystr(L, W, hbr, htr, htl, hbl)
+
+        # Return that motherfucker
+        return heightscape.from_poly(h_poly)
+
+
