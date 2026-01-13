@@ -105,11 +105,11 @@ def solve_concentration_field(dr_x, dr_y, hs, ts, pps, sps, viz=False):
 
     # Homogeneous Dirichlet BC
     dofs_hd = locate_dofs_topological(V, 1, facet_tags.find(BC_TYPES.HOMOGENEOUS_DIRICHLET))
-    bc_hd = dirichletbc(value=ScalarType(0), dofs=dofs_hd, V=V)
+    bc_hd = dirichletbc(value=ScalarType(-1), dofs=dofs_hd, V=V)
 
     # Inhomogeneous Dirichlet BC
     dofs_id = locate_dofs_topological(V, 1, facet_tags.find(BC_TYPES.INHOMOGENEOUS_DIRICHLET))
-    bc_id = dirichletbc(value=ScalarType(pps.w_eq), dofs=dofs_hd, V=V)
+    bc_id = dirichletbc(value=ScalarType(pps.w_eq), dofs=dofs_id, V=V)
 
     # We get homogeneous neumann BC's for free, so all BC's
     bcs = [bc_hd, bc_id]
@@ -126,7 +126,7 @@ def solve_concentration_field(dr_x, dr_y, hs, ts, pps, sps, viz=False):
         grid.set_active_scalars("u")
 
         plotter = pyvista.Plotter()
-        plotter.add_mesh(grid, show_edges=True)
+        plotter.add_mesh(grid, show_edges=False)
         plotter.view_xy()
         plotter.show()
         #while True:
