@@ -27,7 +27,7 @@ def diagnostic_plot(out_t, out_x):
 
 # Make the heightscape
 # hs = heightscape.constructors.rect_interp_htscape((10, 10), (.1, .2, .2, .1))
-hs = heightscape.constructors.rect_interp_htscape((10, 10), (.1, .1, .1, .1))
+hs = heightscape.constructors.rect_interp_htscape((10, 10), (.1, .2, .2, .1))
 
 # Make the tapescape
 ts = tapescape.constructors.make_rectangle_top_open(-5, -5, 5, 5)

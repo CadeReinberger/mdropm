@@ -9,7 +9,7 @@ with open(current_area_loc, 'rb') as in_file:
 
 K_ALPHA = 1 # Minutes
 
-UE = 4
+UE = 5
 all_ts = res_dict['out_t'][2::UE]
 all_vecs = res_dict['out_x'][2::UE]
 n = len(all_vecs[0]) // 3
@@ -74,7 +74,7 @@ def resample_all_curves(all_xs, all_ys, all_thetas, num=50):
         new_thetas.append(thr)
     return new_xs, new_ys, new_thetas
 
-all_xs, all_ys, all_thetas = resample_all_curves(all_xs, all_ys, all_thetas, num=50)
+all_xs, all_ys, all_thetas = resample_all_curves(all_xs, all_ys, all_thetas, num=200)
 
 def get_bounds(xs, ys, extra_factor = .1):
     # Run the main guy to do main guy things
