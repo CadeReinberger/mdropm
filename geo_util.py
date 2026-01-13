@@ -83,7 +83,7 @@ def make_polygon_projector(x, y, u):
         # Find the segment that we want
         i = int(np.searchsorted(cum_len, s, side='right')-1)
         if i == len(x):
-            raise Exception('What the fuck?')
+            i = len(x) - 1
 
         # Compute the linear interpolation
         u_val = np.interp(s, (cum_len[i], cum_len[i+1]), (u[i], u[(i+1)%len(u)]))

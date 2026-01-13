@@ -151,16 +151,20 @@ def compute_deriv_function(starting_drop, prob_univ):
             # Finally, add the theta_dot that we want here
             dr_theta_t[i] = theta_t
 
+        print(f'dr_theta_t: {dr_theta_t}')
         # Now we compute the derivative of our state vector
         st_vec_deriv = np.zeros(3*n)
         st_vec_deriv[:n] = dr_x_t
         st_vec_deriv[n:2*n] = dr_y_t
         st_vec_deriv[2*n:3*n] = dr_theta_t
 
+        # Add in a time print so we have some progress idea here
+        if prob_univ.sol_ps.VERBOSE:
+            print('-' * 60 + f'\nSOLVING @ TIME: {t}\n' + '-' * 60 + '\n')
+
         return st_vec_deriv
 
     return compute_deriv
-
 
 def solve_problem(starting_drop, prob_univ):
     
@@ -182,7 +186,7 @@ def solve_problem(starting_drop, prob_univ):
     radau_dt = prob_univ.sol_ps.RADAU_DT
     subdiv_radau = prob_univ.sol_ps.SUBDIV_RADAU
     radau_eval_linsp_n = prob_univ.sol_ps.RADAU_EVAL_LINSPACE_N
-    rada_out_every = prob_univ.sol_ps.RADAU_OUT_EVERY
+    radau_out_every = prob_univ.sol_ps.RADAU_OUT_EVERY
     check_self_inter_dt = prob_univ.sol_ps.CHECK_SELF_INTERSECTION_DT
 
     # Intialize our checking variables
@@ -199,6 +203,7 @@ def solve_problem(starting_drop, prob_univ):
         # Check if we're over our timestep
         if cur_t > prob_univ.sol_ps.T_FIN:
             print('Solve Complete with condition: FINAL_TIME_HIT')
+            break 
 
         # If it's time, check for a self intersection
         if check_self_inter_dt is not None:           
@@ -213,16 +218,17 @@ def solve_problem(starting_drop, prob_univ):
         new_t = cur_t + radau_dt
         cur_t_eval = [new_t]
         if subdiv_radau:
-            cur_t_eval = np.linsapce(cur_t, new_t, num=radau_eval_linsp_n)[1:]
+            cur_t_eval = np.linspace(cur_t, new_t, num=radau_eval_linsp_n)[1:]
 
-        sol = solve_ivp(f, (cur_t, cur_t + radau_dt), cur_x, t_eval=[cur_t+radau_dt], method='Radau')
-        cur_t, cur_x = sol.t[-1], sol.x[-1]
+        sol = solve_ivp(f, (cur_t, cur_t + radau_dt), cur_x, t_eval=cur_t_eval, method='LSODA')
+        cur_t, cur_x = sol.t[-1], sol.y[:, -1]
         radau_iter_count += 1
 
         # Now we add this to our output
-        if subsiv_radau:
+        if subdiv_radau:
+            print(f'sol_y: {sol.y}')
             out_t.extend(sol.t)
-            out_x.extend(sol.x)
+            out_x.extend([sol.y[:, i] for i in range(radau_eval_linsp_n-1)])
         else:
             if radau_iter_count % radau_out_every == 0:
                 out_t.append(cur_t)
@@ -252,3 +258,85 @@ def solve_problem(starting_drop, prob_univ):
     return out_t, out_x
 
 
+def solve_problem_rk4(starting_drop, prob_univ):
+    # First, make the derivative function that we're gonna need
+    f = compute_deriv_function(starting_drop, prob_univ)
+
+    # Now make the x0 that we're gonna use
+    n = starting_drop.n
+    x0 = np.zeros(3*n)
+    x0[:n] = starting_drop.x
+    x0[n:2*n] = starting_drop.y
+    x0[2*n:3*n] = starting_drop.theta
+
+    # Initialize our loop variables
+    cur_t = 0
+    cur_x = x0
+
+    # Get our radau stuff plz
+    radau_dt = prob_univ.sol_ps.RADAU_DT
+    radau_out_every = prob_univ.sol_ps.RADAU_OUT_EVERY
+    check_self_inter_dt = prob_univ.sol_ps.CHECK_SELF_INTERSECTION_DT
+
+    # Intialize our checking variables
+    last_self_inter_check = 0
+    radau_iter_count = 0
+    starting_area = compute_area_shoelace(starting_drop.x, starting_drop.y)
+
+    # Initialize our ouput things
+    out_t = []
+    out_x = []
+
+    while True:
+
+        # Check if we're over our timestep
+        if cur_t > prob_univ.sol_ps.T_FIN:
+            print('Solve Complete with condition: FINAL_TIME_HIT')
+            break
+
+        # If it's time, check for a self intersection
+        if check_self_inter_dt is not None:
+            if cur_t - last_self_inter_check > check_self_inter_dt:
+                has_si = not is_simple(cur_x[:n], cur_x[n:2*n])
+                if has_si:
+                    print('Solve Complete with condition: SELF-INTERSECTION_FOUND')
+                    break
+                last_self_inter_check = cur_t
+
+        # We're not done, let's do the RK4 step
+        # Note that the t doesn't matter, that's why we don't update it
+        k1 = radau_dt*f(cur_t, cur_x)
+        k2 = radau_dt*f(cur_t, cur_x+.5*k1)
+        k3 = radau_dt*f(cur_t, cur_x+.5*k2)
+        k4 = radau_dt*f(cur_t, cur_x+k3)
+
+        # Update our output here
+        cur_t, cur_x = cur_t + radau_dt, cur_x + (k1+2*k2+2*k3+k4)/6
+        radau_iter_count += 1
+
+        if radau_iter_count % radau_out_every == 0:
+            out_t.append(cur_t)
+            out_x.append(cur_x)
+
+        # Let's compute our progress to make some useful output here
+        cur_area_rat = compute_area_shoelace(cur_x[:n], cur_x[n:2*n]) / starting_area
+        area_prog = (1 - cur_area_rat) / (1 - prob_univ.sol_ps.END_AREA_RATIO)
+        time_prog = cur_t / prob_univ.sol_ps.T_FIN
+
+        # If we hit our area target, call it!
+        if cur_area_rat < prob_univ.sol_ps.END_AREA_RATIO:
+            print('Solve Complete with Condition: END_AREA_RATIO_HIT')
+            break
+
+        # If we're not done and verbose, let's progress print
+        if prob_univ.sol_ps.VERBOSE:
+            print('-' * 60 + '\n' + '-' * 60 + '\n\n')
+            print('RADAU STEP COMPLETE!')
+            print(f'CURRENT TIME: {cur_t}')
+            print(f'CURRENT AREA RATIO: {cur_area_rat}')
+            print(f'AREA PROGRESS: {round(100*area_prog, 2)}%')
+            print(f'TIME PROGRESS: {round(100*time_prog, 2)}%\n')
+            print('-' * 60 + '\n' + '-' * 60 + '\n\n')
+
+    # We've broken out of the solver loop, so we're done
+    return out_t, out_x
