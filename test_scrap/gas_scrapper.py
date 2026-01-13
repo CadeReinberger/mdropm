@@ -1,9 +1,10 @@
-from gas_fem import solve_concentration_field
+from gas_fem import solve_concentration_field, compute_concentration_gradients
 import heightscape
 import tapescape
 import physical_params
 import solver_params
 import numpy as np
+from problem_universe import problem_universe
 
 # Make the heightscape
 hs = heightscape.constructors.rect_interp_htscape((10, 10), (.1, .2, .2, .1))
@@ -17,9 +18,16 @@ pps = physical_params.physical_params()
 # Make the solver params
 sps = solver_params.solver_params()
 
+# Make the problem universe
+pu = problem_universe(hs, ts, sps, pps)
+
 # Make the Starting Droplet
 theta = np.linspace(0, 2*np.pi, num=51)[:-1]
 dr_x, dr_y = 3*np.cos(theta), 3*np.sin(theta)
 
 # Do the visualization check
-solve_concentration_field(dr_x, dr_y, hs,ts,pps,sps, viz=True)
+#solve_concentration_field(dr_x, dr_y, hs,ts,pps,sps, viz=True)
+
+# Get the concentration gradients
+grads = compute_concentration_gradients(dr_x, dr_y, pu)
+print(f'grads: {grads}')

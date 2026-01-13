@@ -3,12 +3,12 @@ import numpy as np
 import uuid
 import gmsh
 
-from dolfinx.fem import (Constant, Function, functionspace, dirichletbc, locate_dofs_topological)
+from dolfinx.fem import (Constant, Function, Expression, functionspace, dirichletbc, locate_dofs_topological)
 from dolfinx.fem.petsc import LinearProblem
 from dolfinx.mesh import locate_entities_boundary
 from dolfinx.plot import vtk_mesh
 from dolfinx.io import gmshio
-
+from dolfinx.geometry import (bb_tree, compute_colliding_cells, compute_collisions_points, create_midpoint_tree, compute_closest_entity)
 
 from mpi4py import MPI
 from ufl import (SpatialCoordinate, TestFunction, TrialFunction, inner, grad, dx)

@@ -4,10 +4,11 @@ import uuid
 from geo_util import gas_lc
 from tapescape import EXTERNAL_BC_TYPES, BC_TYPES
 
-from dolfinx.fem import (Constant, functionspace, dirichletbc, locate_dofs_topological)
+from dolfinx.fem import (Constant, functionspace, Function, Expression, dirichletbc, locate_dofs_topological)
 from dolfinx.fem.petsc import LinearProblem
 from dolfinx.plot import vtk_mesh
 from dolfinx.io import gmshio
+from dolfinx.geometry import (bb_tree, compute_colliding_cells, compute_collisions_points, create_midpoint_tree, compute_closest_entity)
 
 from mpi4py import MPI
 from ufl import (SpatialCoordinate, TestFunction, TrialFunction, inner, grad, dx)
