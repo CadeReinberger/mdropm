@@ -17,8 +17,8 @@ class solver_params:
 
     ### Liquid Phase FEM Params ####
     #------------------------------------------#
-    LIQUID_PHASE_DEFAULT_LC = .02
-    LQIUID_PHASE_DYNAMIC_LC_K = .2 # Can be None
+    LIQUID_PHASE_DEFAULT_LC = .2
+    LIQUID_PHASE_DYNAMIC_LC_K = .18 # Can be None
     LIQUID_PHASE_MESH_FILE = 'internal/liquid_msh.msh'
     #------------------------------------------#
 

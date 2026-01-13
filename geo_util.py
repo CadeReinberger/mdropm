@@ -58,7 +58,7 @@ def liquid_lc(drop_x, drop_y, sps):
         lc = sps.LIQUID_PHASE_DEFAULT_LC
 
     if sps.LIQUID_PHASE_DYNAMIC_LC_K is not None:
-        lc = min(lc, min_dist_neighbors(drop_x, drop_y) * sps.LIQUID_PHASE_DYNAMIC_LC_K)
+        lc = min(lc, min_distance_neighbors(drop_x, drop_y) * sps.LIQUID_PHASE_DYNAMIC_LC_K)
 
     return lc 
 
@@ -77,15 +77,15 @@ def make_polygon_projector(x, y, u):
         P = Point(px, py)
 
         # Distance to closest point
-        s = ring.project(p)
+        s = ring.project(P)
 
         # Find the segment that we want
-        i = int(np.searchsorted(cum, s, side='right')-1)
-        if i == n:
+        i = int(np.searchsorted(cum_len, s, side='right')-1)
+        if i == len(x):
             raise Exception('What the fuck?')
 
         # Compute the linear interpolation
-        u_val = np.interp(s, (cum[i], cum[i+1]), (u[i], u[(i+1)%len(u)]))
+        u_val = np.interp(s, (cum_len[i], cum_len[i+1]), (u[i], u[(i+1)%len(u)]))
         
         # Return the result
         return u_val

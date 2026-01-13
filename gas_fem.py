@@ -132,7 +132,7 @@ def solve_concentration_field(dr_x, dr_y, hs, ts, pps, sps, viz=False):
         #while True:
         #    continue
 
-        return (uh, V, mesh)
+    return (uh, V, mesh)
 
 
 
