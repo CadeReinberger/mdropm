@@ -1,4 +1,5 @@
 import numpy as np
+from shapely.geometry import Point, LinearRing
 
 def compute_area_shoelace(x, y):
     return .5 * np.abs(sum(x*np.roll(y, 1) - y*np.roll(x, 1)))
@@ -60,3 +61,34 @@ def liquid_lc(drop_x, drop_y, sps):
         lc = min(lc, min_dist_neighbors(drop_x, drop_y) * sps.LIQUID_PHASE_DYNAMIC_LC_K)
 
     return lc 
+
+def make_polygon_projector(x, y, u):
+    # Make the Linear Ring so Shapely knows wassup
+    coords = list(zip(x,y))
+    ring = LinearRing(coords)
+
+    # Make the segment lengths and cum arclength
+    x_circ = np.r_[x, x[0]]
+    y_circ = np.r_[y, y[0]]
+    seg_len = np.hypot(np.diff(x_circ), np.diff(y_circ))
+    cum_len = np.r_[0, np.cumsum(seg_len)]
+
+    def query(px, py):
+        P = Point(px, py)
+
+        # Distance to closest point
+        s = ring.project(p)
+
+        # Find the segment that we want
+        i = int(np.searchsorted(cum, s, side='right')-1)
+        if i == n:
+            raise Exception('What the fuck?')
+
+        # Compute the linear interpolation
+        u_val = np.interp(s, (cum[i], cum[i+1]), (u[i], u[(i+1)%len(u)]))
+        
+        # Return the result
+        return u_val
+
+    # Return the querying function
+    return query
