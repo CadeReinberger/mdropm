@@ -37,8 +37,7 @@ class solver_params:
     T_FIN = 30
     # All of these can be None to not use
     END_AREA_RATIO = .333 
-    END_VOLUME_RATIO = .25 
-    REMESH_SPLINE_TIMESTEP = None # Okay, this one's a pretty big deal
+    END_VOLUME_RATIO = .25
     CHECK_SELF_INTERSECTION_DT = .1
     #-------------------------------------------#
     

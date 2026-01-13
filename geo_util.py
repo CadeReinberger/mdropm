@@ -92,3 +92,15 @@ def make_polygon_projector(x, y, u):
 
     # Return the querying function
     return query
+
+
+def Lambda(theta):
+    if np.isclose(theta, np.pi/2):
+        return 0
+    return (.5*np.pi - theta) * np.sec(theta)**2 - np.tan(theta)
+
+def Lambda_pr(theta):
+    if np.isclose(theta, np.pi/2):
+        return -2/3
+    return np.sec(theta)**2 * ((np.pi - 2*theta)*np.tan(theta) - 2) 
+

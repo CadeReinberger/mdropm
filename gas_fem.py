@@ -135,4 +135,46 @@ def solve_concentration_field(dr_x, dr_y, hs, ts, pps, sps, viz=False):
     return (uh, V, mesh)
 
 
+def compute_concentration_gradients(dr_x, dr_y, pu):
+    # Read the stuff from the problem universe
+    hs, ts, pps, sps = pu.htscp, pu.tpscp, pu.phys_ps, pu.sol_ps
+    
+    # First, solve the problem and get the solution
+    uh, V, mesh = solve_concentration_field(dr_x, dr_y, hs, ts, pps, sps)
+    
+    # Now, interpolate the gradient as we want
+    W = functionspace(mesh, ("CG", 2, (2,)))
+    guh = Function(W)
+    guh_expr = Expression(grad(uh), W.element.interpolation_points())
+    guh.interpolate(guh_expr)
 
+    # Make geometry tools to find incident cells
+    tree = bb_tree(mesh, 2)
+
+    # Initialize a gradients to return
+    grad_vecs = []
+
+    # Iterate over our points and compute derivatives, based on whether or not we project outside mesh
+    if not sps.PROJECT_OUTSIDE_MESH:
+        # Compute colliding cells and pick one, no projection
+        for ind in range(len(dr_x)):
+            eval_pt = np.array([dr_x[ind], dr_y[ind], 0])
+            cell_candidates = compute_collisions_points(tree, eval_pt)
+            cell = compute_colliding_cells(mesh, cell_candidates, eval_pt)
+            cell = cell.array[0]
+            grad_vec = guh.eval(eval_pt, [cell])
+            grad_vecs.append(grad_vec)
+
+    else:
+        # Compute the midpoint tree to do the projection shit
+        mesh_map = mesh.topology.index_map(2)
+        all_faces = np.arange(mesh_map.size_local + mesh_map.num_ghosts, dtype=np.int32)
+        face_midpoint_tree = create_midpoint_tree(mesh, 2, all_faces)
+        # Now, iterate through and see what we can do
+        for ind in range(len(dr_x)):
+            eval_pt = np.array([dr_x[ind], dr_y[ind], 0])
+            closest_cell = compute_closest_entity(tree, face_midpoint_tree, mesh, eval_pt)[0]
+            grad_vec = guh.eval(eval_pt, [closest_cell])
+            grad_vecs.append(grad_vec)
+
+    return grad_vecs
