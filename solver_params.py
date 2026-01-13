@@ -33,13 +33,14 @@ class solver_params:
 
     # Time Integration Paramaters
     #------------------------------------------#
-    RADAU_DT = .05 # Minutes
+    RADAU_DT = .2 # Minutes
+    SUBDIV_RADAU = False
     RADAU_EVAL_LINSPACE_N = 6 
+    RADAU_OUT_EVERY = 1
     T_FIN = 30
-    # All of these can be None to not use
-    END_AREA_RATIO = .333 
-    END_VOLUME_RATIO = .25
-    CHECK_SELF_INTERSECTION_DT = .1
+    VERBOSE = True
+    END_AREA_RATIO = .333 # Make this 0 to not use
+    CHECK_SELF_INTERSECTION_DT = None # Can be None
     #-------------------------------------------#
     
 

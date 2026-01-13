@@ -36,6 +36,9 @@ class constructors:
     def make_circular_flat_drop(n, R, hs):
         theta = np.linspace(0, 2*np.pi, num=n+1)[:-1]
         x, y = R*np.cos(theta), R*np.sin(theta)
-        dh_dx = np.array()
+        dh_dn = np.cos(theta[ind])*hs.hx(x[ind], y[ind]) + np.sin(theta[ind])*hs.hy(x[ind], y[ind])
+        psi = np.arctan(dh_dn)
+        ca_theta = np.pi/2 - psi
+        return droplet(n, 2*np.pi, theta, x, y, ca_theta)
 
         

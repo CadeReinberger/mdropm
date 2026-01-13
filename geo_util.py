@@ -1,5 +1,6 @@
 import numpy as np
-from shapely.geometry import Point, LinearRing
+from shapely.geometry import Point, LinearRing, LineString, Polygon
+from itertools import combinations
 
 def compute_area_shoelace(x, y):
     return .5 * np.abs(sum(x*np.roll(y, 1) - y*np.roll(x, 1)))
@@ -104,3 +105,48 @@ def Lambda_pr(theta):
         return -2/3
     return np.sec(theta)**2 * ((np.pi - 2*theta)*np.tan(theta) - 2) 
 
+def compute_casr(pps):
+    # First, get the constants from the pps dataclass
+    theta_a, theta_r = pps.theta_a, pps.theta_r
+    k_a, k_r = pps.k_a, pps.k_r
+
+    # Make the CASR (linear assumption here)
+    def sigma(theta):
+        if theta > theta_a:
+            return k_a * (theta - theta_a)
+        if theta < theta_r:
+            return k_r * (theta - theta_r)
+        else:
+            return 0
+
+    def sigma_prime(theta):
+        if theta > theta_a: 
+            return k_a
+        if theta < theta_r: 
+            return k_r
+        else:
+            return 0
+
+    return sigma, sigma_prime
+
+def is_simple(x, y):
+    # First, make all the line segments we want
+    all_segments = []
+    n = len(x)
+    for i in range(n):
+        xi, yi = x[i], y[i]
+        ip1 = (i+1)%n
+        xip1, yip1 = x[ip1], y[ip1]
+        seg = LineString([(xi, yi), (xip1, yip1)])
+        all_segments.append(seg)
+
+    # Next, we iterate over them all and see if we have any nontrivial intersections
+    for (i1, i2) in combinations(range(n), 2):
+        if i2 == ((i1+1)%n) or i1 == ((i2+1)%n):
+            # They're neighbors, we don't care about their self-intersection
+            continue
+        seg1, seg2 = all_segments[i1], all_segments[i2]
+        if seg1.intersects(seg2):
+            return False # We have a self-intersection
+
+    return True
