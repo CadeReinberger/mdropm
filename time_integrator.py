@@ -2,18 +2,22 @@ from geo_util import Lambda, Lambda_pr, compute_casr, compute_area_shoelace, is_
 from gas_fem import compute_concentration_gradients
 from liquid_fem import compute_pressure_gradients
 from scipy.integrate import solve_ivp
+import numpy as np
 
 def compute_deriv_function(starting_drop, prob_univ):
     
     # Compute a few global utils and such
     n = starting_drop.n
-    h = starting_drop.L / n
+    ds = starting_drop.L / n
     sig, sig_p = compute_casr(prob_univ.phys_ps)
     k_p = 1 / (3 * prob_univ.phys_ps.mu)
     k_w = prob_univ.phys_ps.D * prob_univ.phys_ps.c_g / prob_univ.phys_ps.c_l
 
     # Let's make the function that will define our ODE
     def compute_deriv(t, state_vec):
+
+        # We may need this but I don't think we do
+        # nonlocal n, h, sig, sig_p, k_p, k_w
 
         # First, let's get the x, y, p we're gonna use
         n = len(state_vec)//3
@@ -36,8 +40,8 @@ def compute_deriv_function(starting_drop, prob_univ):
             theta = dr_theta[i]
 
             # Compute the s-derivatives in the obvious way
-            x_s = (x[ip1] - x[im1]) / (2 * h)
-            y_s = (y[ip1] - y[im1]) / (2 * h)
+            x_s = (dr_x[ip1] - dr_x[im1]) / (2 * ds)
+            y_s = (dr_y[ip1] - dr_y[im1]) / (2 * ds)
             n_hat = np.array([y_s, -x_s]) / np.hypot(x_s, y_s)
 
             # Next, compute our height and height derivatives
@@ -47,7 +51,7 @@ def compute_deriv_function(starting_drop, prob_univ):
             grad_h = np.array([hx, hy])
 
             # Now, compute our psi
-            psi = np.arctan(np.linalg.dot(n_hat, grad_h))
+            psi = np.arctan(np.dot(n_hat, grad_h))
 
             # Now compute our pressure field
             p = -prob_univ.phys_ps.gamma * np.cos(theta + psi) / h
@@ -57,7 +61,7 @@ def compute_deriv_function(starting_drop, prob_univ):
 
         # Now, we use the liquid and gase phase fem solvers to get gradients
         grad_p = compute_pressure_gradients(dr_x, dr_y, p_arr, prob_univ)
-        grad_w = compute_pressure_gradients(dr_x, dr_y, prob_univ)
+        grad_w = compute_concentration_gradients(dr_x, dr_y, prob_univ)
 
         # Now, we initialize some arrays to store our derivatives
         dr_x_t = np.zeros(n)
@@ -76,9 +80,10 @@ def compute_deriv_function(starting_drop, prob_univ):
             theta = dr_theta[i]
 
             # Compute the s-derivatives in the obvious way
-            x_s = (x[ip1] - x[im1]) / (2 * h)
-            y_s = (y[ip1] - y[im1]) / (2 * h)
+            x_s = (dr_x[ip1] - dr_x[im1]) / (2 * ds)
+            y_s = (dr_y[ip1] - dr_y[im1]) / (2 * ds)
             s_norm = np.hypot(x_s, y_s)
+            theta_s = (dr_theta[ip1] - dr_theta[im1]) / (2 * ds)
 
             # Compute sigma and sigma prime, which we'll need
             sig_theta = sig(theta)
@@ -104,11 +109,11 @@ def compute_deriv_function(starting_drop, prob_univ):
             hyy = prob_univ.htscp.hyy(x, y)
             grad_h = np.array([hx, hy])
             hess_h = np.array([[hxx, hxy], [hxy, hyy]])
-            dh_dn = np.linalg.dot(n_hat, grad(h))
+            dh_dn = np.dot(n_hat, grad_h)
 
             # Now compute our second derivatives in s
-            x_ss = (x[ip1] - 2*x[i] + x[im1]) / (h*h)
-            y_ss = (y[ip1] - 2*y[i] + y[im1]) / (h*h)
+            x_ss = (dr_x[ip1] - 2*dr_x[i] + dr_x[im1]) / (ds**2)
+            y_ss = (dr_y[ip1] - 2*dr_y[i] + dr_y[im1]) / (ds**2)
 
             # Now compute our mixed partials from the PDE
             x_st_one = y_s * sig_p_theta * theta_s / s_norm
@@ -120,19 +125,19 @@ def compute_deriv_function(starting_drop, prob_univ):
 
             # Now we compute dn_dt 
             dn_dt_x = (y_st*x_s**2 - y_s*x_s*x_st) / (s_norm**3)
-            dn_dt_y = (x_s*y_s_y_st - x_st*y_s**2) / (s_norm**3)
+            dn_dt_y = (x_s*y_s*y_st - x_st*y_s**2) / (s_norm**3)
             dn_dt = np.array([dn_dt_x, dn_dt_y])
 
             # Compute another term
-            n_dot_d_dt_grad_h = sig_theta * np.linalg.dot(n_hat, hess_h @ n_hat)
+            n_dot_d_dt_grad_h = sig_theta * np.dot(n_hat, hess_h @ n_hat)
 
             # Compute psi and its derivative
-            psi_dot = (np.linalg.dot(dn_dt, grad_h) + n_dot_d_dt_grad_h) / np.hypot(1, dh_dn)**2
-            psi = np.arctan(dh/dn)
+            psi_dot = (np.dot(dn_dt, grad_h) + n_dot_d_dt_grad_h) / np.hypot(1, dh_dn)**2
+            psi = np.arctan(dh_dn)
 
             # Compute the normal derivatives we'll need for our rhs
-            dw_dn = np.linalg.dot(grad_w[i], n_hat)
-            dp_dn = np.linalg.dot(grad_p[i], n_hat)
+            dw_dn = np.dot(grad_w[i], n_hat)
+            dp_dn = np.dot(grad_p[i], n_hat)
 
             # Compute the RHS we'll need in a bit
             rhs = 2*h*(k_p*dp_dn*h**2 + sig_theta) - 2*h*k_w*dw_dn
@@ -178,6 +183,7 @@ def solve_problem(starting_drop, prob_univ):
     subdiv_radau = prob_univ.sol_ps.SUBDIV_RADAU
     radau_eval_linsp_n = prob_univ.sol_ps.RADAU_EVAL_LINSPACE_N
     rada_out_every = prob_univ.sol_ps.RADAU_OUT_EVERY
+    check_self_inter_dt = prob_univ.sol_ps.CHECK_SELF_INTERSECTION_DT
 
     # Intialize our checking variables
     last_self_inter_check = 0
@@ -195,12 +201,13 @@ def solve_problem(starting_drop, prob_univ):
             print('Solve Complete with condition: FINAL_TIME_HIT')
 
         # If it's time, check for a self intersection
-        if cur_t - last_self_inter_check > prob_univ.sol_ps.CHECK_SELF_INTERSECTION_DT:
-            has_si = not is_simple(cur_x[:n], cur_x[n:2*n])
-            if has_si:
-                print('Solve Complete with condition: SELF-INTERSECTION_FOUND')
-                break
-            last_self_inter_check = cur_t
+        if check_self_inter_dt is not None:           
+            if cur_t - last_self_inter_check > check_self_inter_dt:
+                has_si = not is_simple(cur_x[:n], cur_x[n:2*n])
+                if has_si:
+                    print('Solve Complete with condition: SELF-INTERSECTION_FOUND')
+                    break
+                last_self_inter_check = cur_t
 
         # We're not done, let's prep the currennt radau step
         new_t = cur_t + radau_dt
@@ -208,7 +215,7 @@ def solve_problem(starting_drop, prob_univ):
         if subdiv_radau:
             cur_t_eval = np.linsapce(cur_t, new_t, num=radau_eval_linsp_n)[1:]
 
-        sol = solve_ivp(f, (cur_t, cur_t + radau_dt), cur_x, t_eval=[cur_t+radau_dt], method='radau')
+        sol = solve_ivp(f, (cur_t, cur_t + radau_dt), cur_x, t_eval=[cur_t+radau_dt], method='Radau')
         cur_t, cur_x = sol.t[-1], sol.x[-1]
         radau_iter_count += 1
 

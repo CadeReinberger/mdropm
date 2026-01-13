@@ -7,9 +7,9 @@ class solver_params:
     ### Gas Phase FEM Params ###
     #------------------------------------------#
     GAS_PHASE_DYNAMIC_LC = True
-    GAS_PHASE_DEFAULT_LC = .2
+    GAS_PHASE_DEFAULT_LC = .5
     # For slide outside, slide-to-drop, and drop inside. Can be Nones
-    GAS_PHASE_LC_KS = (.18, .18, .18)
+    GAS_PHASE_LC_KS = (.25, .25, .25)
     GAS_PHASE_MESH_FILE = 'internal/gas_msh.msh'
     #------------------------------------------#
 
@@ -17,8 +17,8 @@ class solver_params:
 
     ### Liquid Phase FEM Params ####
     #------------------------------------------#
-    LIQUID_PHASE_DEFAULT_LC = .2
-    LIQUID_PHASE_DYNAMIC_LC_K = .18 # Can be None
+    LIQUID_PHASE_DEFAULT_LC = .5
+    LIQUID_PHASE_DYNAMIC_LC_K = .25 # Can be None
     LIQUID_PHASE_MESH_FILE = 'internal/liquid_msh.msh'
     #------------------------------------------#
 
@@ -33,7 +33,7 @@ class solver_params:
 
     # Time Integration Paramaters
     #------------------------------------------#
-    RADAU_DT = .2 # Minutes
+    RADAU_DT = .25 # Minutes
     SUBDIV_RADAU = False
     RADAU_EVAL_LINSPACE_N = 6 
     RADAU_OUT_EVERY = 1
