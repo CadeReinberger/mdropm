@@ -7,7 +7,7 @@ class solver_params:
     ### Gas Phase FEM Params ###
     #------------------------------------------#
     GAS_PHASE_DYNAMIC_LC = True
-    GAS_PHASE_DEFAULT_LC = .02
+    GAS_PHASE_DEFAULT_LC = .2
     # For slide outside, slide-to-drop, and drop inside. Can be Nones
     GAS_PHASE_LC_KS = (.18, .18, .18)
     GAS_PHASE_MESH_FILE = 'internal/gas_msh.msh'

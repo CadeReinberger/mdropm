@@ -1,8 +1,10 @@
 import numpy as np
 import sympy
+import re
 
 class heightscape:
-    def __init__(self, h, hx, hy, hxx, hxy, hyy, H):
+    def __init__(self, ufl_str, h, hx, hy, hxx, hxy, hyy, H):
+        self.ufl_str = ufl_str
         self.h = h
         self.hx = hx
         self.hy = hy
@@ -11,6 +13,8 @@ class heightscape:
         self.hyy = hyy
         self.H = H
 
+class constructors:
+        
     def from_poly(poly_str):
         # Get the h functions
         h_expr = sympy.sympify(poly_str)
@@ -29,8 +33,13 @@ class heightscape:
         hxy_funct = sympy.lambdify(('x', 'y'), hxy_expr)
         hyy_funct = sympy.lambdify(('x', 'y'), hyy_expr)
         H_funct = sympy.lambdify(('x', 'y'), H_expr)
+    
+        # Get the ufl str with straight-up string manipulation
+        ufl_str = re.sub('x', 'z', poly_str)
+        ufl_str = re.sub('y', 'x[1]', ufl_str)
+        ufl_str = re.sub('z', 'x[0]', ufl_str)
 
-        return heightscape(h_funct, hx_funct, hy_funct,
+        return heightscape(ufl_str, h_funct, hx_funct, hy_funct,
                            hxx_funct, hxy_funct, hyy_funct,
                            H_funct)
 
@@ -42,7 +51,7 @@ class heightscape:
         x1, x2 = -L/2, L/2
         y1, y2 = -W/2, W/2
 
-                # Define bilinear basis functions
+        # Define bilinear basis functions
         N1 = (x2 - x)*(y2 - y)/((x2 - x1)*(y2 - y1))  # Bottom left (hbl)
         N2 = (x - x1)*(y2 - y)/((x2 - x1)*(y2 - y1))  # Bottom right (hbr)
         N3 = (x - x1)*(y - y1)/((x2 - x1)*(y2 - y1))  # Top right (htr)
@@ -67,9 +76,9 @@ class heightscape:
         hbr, htr, htl, hbl = h_vals
 
         # Get the height polynomial
-        h_poly = heightscape.rect_interp_polystr(L, W, hbr, htr, htl, hbl)
+        h_poly = constructors.rect_interp_polystr(L, W, hbr, htr, htl, hbl)
 
         # Return that motherfucker
-        return heightscape.from_poly(h_poly)
+        return constructors.from_poly(h_poly)
 
 

@@ -3,7 +3,7 @@ import numpy as np
 def compute_area_shoelace(x, y):
     return .5 * np.abs(sum(x*np.roll(y, 1) - y*np.roll(x, 1)))
 
-def min_dist_within(x, y):
+def min_distance_within(x, y):
     return min(np.hypot(x[i]-x[j], y[i]-y[j]) for i in range(len(x)) for j in range(len(y)) if i != j)
 
 def min_distance_between(x1, y1, x2, y2):
@@ -12,18 +12,22 @@ def min_distance_between(x1, y1, x2, y2):
 def min_distance_neighbors(x, y):
     return min(np.hypot(x[(i+1)%len(x)]-x[i], y[(i+1)%len(x)]-y[i]) for i in range(len(x)))
 
-def gas_lc(drop_x, drop_y, ext_x, ext_y, lc_ks, def_lc, sps):
+def gas_lc(drop_x, drop_y, ts, sps):
     if not sps.GAS_PHASE_DYNAMIC_LC:
         return sps.GAS_PHASE_DEFAULT_LC
 
+    # Get the tapescape to a points list
+    ext_x = np.array([seg.start_pt[0] for seg in ts.segments])
+    ext_y = np.array([seg.start_pt[1] for seg in ts.segments])
+
     # First compute the distance along the slide
-    d_sigma = min_dist_within(ext_x, ext_y)
+    d_sigma = min_distance_within(ext_x, ext_y)
     
     # Next, compute the distance between the slide and the drop
     d_mu = min_distance_between(drop_x, drop_y, ext_x, ext_y)
 
     # Next, compute the distance along the droplet itself
-    d_delta = min_dist_neighbors(drop_x, drop_y)
+    d_delta = min_distance_neighbors(drop_x, drop_y)
 
     # Now, compute and return the minimum LC
     (k_sigma, k_mu, k_delta) = sps.GAS_PHASE_LC_KS
@@ -50,7 +54,7 @@ def liquid_lc(drop_x, drop_y, sps):
     lc = np.inf
 
     if sps.LIQUID_PHASE_DEFAULT_LC is not None:
-        lc = sps.LIQUID_PHASE_DEFAULT_LC)
+        lc = sps.LIQUID_PHASE_DEFAULT_LC
 
     if sps.LIQUID_PHASE_DYNAMIC_LC_K is not None:
         lc = min(lc, min_dist_neighbors(drop_x, drop_y) * sps.LIQUID_PHASE_DYNAMIC_LC_K)

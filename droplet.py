@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import numpy as np
 
 @datclass
-class DROPLET:
+class droplet:
     n: int # Number of Nodes on the droplet
     L: float # S^1 considered as [0, L) for our purposes
     s: np.array # s-values of samples points
@@ -32,5 +32,10 @@ class DROPLET:
         return DROPLET(n, L, s, x, y, theta)
 
     
-    class CONSTRUCTORS:
-        def make_circular_pressure_eq():
+class constructors:
+    def make_circular_flat_drop(n, R, hs):
+        theta = np.linspace(0, 2*np.pi, num=n+1)[:-1]
+        x, y = R*np.cos(theta), R*np.sin(theta)
+        dh_dx = np.array()
+
+        
