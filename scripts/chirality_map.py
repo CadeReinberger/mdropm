@@ -9,9 +9,13 @@ with open(current_area_loc, 'rb') as in_file:
 
 K_ALPHA = 1 # Minutes
 
-UE = 5
-all_ts = res_dict['out_t'][2::UE]
-all_vecs = res_dict['out_x'][2::UE]
+start_ind = 2
+UE = 1
+end_prop = .95
+end_ind = int(end_prop * len(res_dict['out_t']))
+
+all_ts = res_dict['out_t'][2:end_ind:UE]
+all_vecs = res_dict['out_x'][2:end_ind:UE]
 n = len(all_vecs[0]) // 3
 all_xs = [vec[:n] for vec in all_vecs]
 all_ys = [vec[n:2*n] for vec in all_vecs]
@@ -74,7 +78,7 @@ def resample_all_curves(all_xs, all_ys, all_thetas, num=50):
         new_thetas.append(thr)
     return new_xs, new_ys, new_thetas
 
-all_xs, all_ys, all_thetas = resample_all_curves(all_xs, all_ys, all_thetas, num=200)
+all_xs, all_ys, all_thetas = resample_all_curves(all_xs, all_ys, all_thetas, num=10)
 
 def get_bounds(xs, ys, extra_factor = .1):
     # Run the main guy to do main guy things
@@ -120,7 +124,7 @@ def make_alpha_interpolator(ts, xs, ys, k_alpha=K_ALPHA):
 
     # Now let's make the guy to interpolate
     all_in, all_out = [], []
-    t_eval = np.linspace(ts[0], ts[-1], num=len(ts))
+    t_eval = np.linspace(ts[0], ts[-1], num=len(ts)) # TODO: FIX
     for s_ind in range(ns):
         for t in t_eval: # Could do anything here
             x_val, y_val = x_splines[s_ind](t), y_splines[s_ind](t)
@@ -138,8 +142,8 @@ def make_alpha_plot(ts, xs, ys, k_alpha=K_ALPHA):
 
         # Make a mesh grid so we can do this
         (x_min,x_max), (y_min, y_max) = get_bounds(xs, ys)
-        x = np.linspace(x_min, x_max, 1000)
-        y = np.linspace(y_min, y_max, 1000)
+        x = np.linspace(x_min, x_max, 200)
+        y = np.linspace(y_min, y_max, 200)
         X, Y = np.meshgrid(x, y)
 
         # Interpoalte this mamajama
@@ -148,7 +152,7 @@ def make_alpha_plot(ts, xs, ys, k_alpha=K_ALPHA):
         # Get the colorscale we want
         z_flat = Z.flatten()
         z_flat_nonzero = z_flat[z_flat != 0]
-        vlim = np.percentile(np.abs(z_flat_nonzero), 95)
+        vlim = np.percentile(np.abs(z_flat_nonzero), 90)
 
         # Make the plot
         plt.figure() # make a new plot from the old one

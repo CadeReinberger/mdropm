@@ -5,7 +5,6 @@ import solver_params
 import droplet
 import numpy as np
 from time_integrator import solve_problem, solve_problem_rk4
-from time_integrator_imex import solve_problem_imex_implicit
 from problem_universe import problem_universe
 from matplotlib import pyplot as plt
 from pickler import pickle_output
@@ -42,7 +41,7 @@ sps = solver_params.solver_params()
 pu = problem_universe(hs, ts, sps, pps) 
 
 # Make the Starting Droplet
-drop = droplet.constructors.make_circular_flat_drop(8, 3, hs)
+drop = droplet.constructors.make_circular_flat_drop(20, 3, hs)
 
 # Solve the time integration problem
 out_t, out_x = solve_problem(drop, pu)
