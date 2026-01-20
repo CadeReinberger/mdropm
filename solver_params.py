@@ -33,7 +33,7 @@ class solver_params:
 
     # Time Integration Paramaters
     #------------------------------------------#
-    RADAU_DT = 1 # Minutes
+    RADAU_DT = .5 # Minutes
     SUBDIV_RADAU = True
     RADAU_EVAL_LINSPACE_N = 5 
     RADAU_OUT_EVERY = 1

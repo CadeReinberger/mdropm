@@ -41,7 +41,7 @@ sps = solver_params.solver_params()
 pu = problem_universe(hs, ts, sps, pps) 
 
 # Make the Starting Droplet
-drop = droplet.constructors.make_circular_flat_drop(20, 3, hs)
+drop = droplet.constructors.make_circular_flat_drop(25, 3, hs)
 
 # Solve the time integration problem
 out_t, out_x = solve_problem(drop, pu)

@@ -78,7 +78,7 @@ def resample_all_curves(all_xs, all_ys, all_thetas, num=50):
         new_thetas.append(thr)
     return new_xs, new_ys, new_thetas
 
-all_xs, all_ys, all_thetas = resample_all_curves(all_xs, all_ys, all_thetas, num=10)
+# all_xs, all_ys, all_thetas = resample_all_curves(all_xs, all_ys, all_thetas, num=25)
 
 def get_bounds(xs, ys, extra_factor = .1):
     # Run the main guy to do main guy things
@@ -104,8 +104,8 @@ def to_spline_set(ts, xs, ys):
     for ind in range(N):
         x_vals = [xs[l][ind] for l in range(len(ts))]
         y_vals = [ys[l][ind] for l in range(len(ts))]
-        x_spl = CubicSpline(ts, x_vals, bc_type='natural')
-        y_spl = CubicSpline(ts, y_vals, bc_type='natural')
+        x_spl = CubicSpline(ts, x_vals, bc_type='not-a-knot')
+        y_spl = CubicSpline(ts, y_vals, bc_type='not-a-knot')
         x_splines.append(x_spl), y_splines.append(y_spl)
 
     return x_splines, y_splines
