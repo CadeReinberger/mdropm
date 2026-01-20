@@ -78,7 +78,7 @@ def resample_all_curves(all_xs, all_ys, all_thetas, num=50):
         new_thetas.append(thr)
     return new_xs, new_ys, new_thetas
 
-all_xs, all_ys, all_thetas = resample_all_curves(all_xs, all_ys, all_thetas, num=20)
+# all_xs, all_ys, all_thetas = resample_all_curves(all_xs, all_ys, all_thetas, num=50)
 
 def get_bounds(xs, ys, extra_factor = .1):
     # Run the main guy to do main guy things
@@ -94,7 +94,7 @@ def get_bounds(xs, ys, extra_factor = .1):
 
     return ((min_x, max_x), (min_y, max_y))
 
-def to_spline_set(ts, xs, ys):
+def to_spline_set_old(ts, xs, ys):
     # Let's get the number we want
     N = len(xs[0])
 
@@ -105,16 +105,129 @@ def to_spline_set(ts, xs, ys):
         x_vals = [xs[l][ind] for l in range(len(ts))]
         y_vals = [ys[l][ind] for l in range(len(ts))]
 
-        # x_spl = CubicSpline(ts, x_vals, bc_type='natural')
-        # y_spl = CubicSpline(ts, y_vals, bc_type='natural')
+        x_spl = CubicSpline(ts, x_vals, bc_type='natural')
+        y_spl = CubicSpline(ts, y_vals, bc_type='natural')
         
         # Let's make these splines a bit more robust
-        x_spl = Akima1DInterpolator(ts, x_vals)
-        y_spl = Akima1DInterpolator(ts, y_vals)
+        # x_spl = Akima1DInterpolator(ts, x_vals)
+        # y_spl = Akima1DInterpolator(ts, y_vals)
 
         x_splines.append(x_spl), y_splines.append(y_spl)
 
     return x_splines, y_splines
+
+def to_spline_set(ts, xs, ys, n_intervals=5, smooth_fallback=1e-6):
+    """
+    Drop-in replacement for to_spline_set() that does *spline regression* instead of
+    exact interpolation, to stabilize x', y', x'', y''.
+
+    Fits cubic least-squares splines with a small fixed knot set:
+        scipy.interpolate.LSQUnivariateSpline
+
+    Parameters
+    ----------
+    ts : (T,) array-like
+        Times (must be strictly increasing for the spline routines).
+    xs, ys : list length T, each entry array-like length N
+        Your data layout: xs[t_ind][s_ind], ys[t_ind][s_ind].
+    n_intervals : int
+        Number of knot intervals (default 5). This creates (n_intervals-1) interior knots.
+        Example: n_intervals=5 -> 4 interior knots -> pretty strong smoothing.
+    smooth_fallback : float
+        If LSQUnivariateSpline fails (e.g. not enough points), fallback to
+        UnivariateSpline with smoothing `s = smooth_fallback * T * var(data)`.
+
+    Returns
+    -------
+    x_splines, y_splines : lists of spline objects length N
+        Each spline supports calls like:
+            x_splines[s_ind](t)      # value
+            x_splines[s_ind](t, 1)   # first derivative
+            x_splines[s_ind](t, 2)   # second derivative
+    """
+    from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline
+
+    t = np.asarray(ts, dtype=float)
+    if t.ndim != 1:
+        raise ValueError("ts must be 1D")
+    T = t.size
+    if len(xs) != T or len(ys) != T:
+        raise ValueError("xs and ys must have outer length equal to len(ts)")
+    if T < 4:
+        raise ValueError("Need at least 4 time samples for a cubic spline regression")
+
+    # Ensure strictly increasing t
+    if not np.all(np.diff(t) > 0):
+        # If you have duplicates, this will *not* be well-defined; remove duplicates deterministically.
+        # Keep first occurrence of each unique time.
+        uniq_t, uniq_idx = np.unique(t, return_index=True)
+        uniq_idx = np.sort(uniq_idx)
+        t = t[uniq_idx]
+        xs = [xs[i] for i in uniq_idx]
+        ys = [ys[i] for i in uniq_idx]
+        T = t.size
+        if T < 4 or not np.all(np.diff(t) > 0):
+            raise ValueError("ts must be strictly increasing after removing duplicates")
+
+    # number of curves
+    N = len(xs[0])
+    for l in range(T):
+        if len(xs[l]) != N or len(ys[l]) != N:
+            raise ValueError("Each xs[l], ys[l] must have the same length (number of s_ind)")
+
+    # Build interior knots: n_intervals => (n_intervals-1) interior knots
+    if n_intervals < 2:
+        raise ValueError("n_intervals must be >= 2")
+
+    n_int = n_intervals - 1
+    # Need at least k+1 + n_int points for LSQUnivariateSpline with k=3 (rule of thumb)
+    # Practically, require T > n_int + 3
+    use_lsq = (T > n_int + 3) and (n_int > 0)
+
+    if use_lsq:
+        # place interior knots evenly in time, excluding endpoints
+        # (avoid exact endpoints — LSQUnivariateSpline requires strictly inside)
+        knots = np.linspace(t[0], t[-1], n_intervals + 1)[1:-1]
+        # If time range is tiny, this can produce duplicates; guard:
+        knots = np.unique(knots)
+        if knots.size == 0:
+            use_lsq = False
+    else:
+        knots = np.array([], dtype=float)
+
+    x_splines = []
+    y_splines = []
+
+    for s_ind in range(N):
+        x_vals = np.asarray([xs[l][s_ind] for l in range(T)], dtype=float)
+        y_vals = np.asarray([ys[l][s_ind] for l in range(T)], dtype=float)
+
+        if use_lsq:
+            try:
+                xspl = LSQUnivariateSpline(t, x_vals, t=knots, k=3)
+            except Exception:
+                # fallback: smoothing spline with tiny smoothing scaled to variance
+                s = float(smooth_fallback) * T * (np.var(x_vals) + 1e-12)
+                xspl = UnivariateSpline(t, x_vals, k=3, s=s)
+
+            try:
+                yspl = LSQUnivariateSpline(t, y_vals, t=knots, k=3)
+            except Exception:
+                s = float(smooth_fallback) * T * (np.var(y_vals) + 1e-12)
+                yspl = UnivariateSpline(t, y_vals, k=3, s=s)
+        else:
+            # If you don't have enough points for LSQ spline w/ knots, use smoothing spline.
+            s = float(smooth_fallback) * T * (np.var(x_vals) + 1e-12)
+            xspl = UnivariateSpline(t, x_vals, k=3, s=s)
+
+            s = float(smooth_fallback) * T * (np.var(y_vals) + 1e-12)
+            yspl = UnivariateSpline(t, y_vals, k=3, s=s)
+
+        x_splines.append(xspl)
+        y_splines.append(yspl)
+
+    return x_splines, y_splines
+
 
 def compute_alpha(x_spl, y_spl, t, k_alpha=K_ALPHA):
     xt, yt = x_spl(t, 1), y_spl(t, 1)
@@ -130,7 +243,7 @@ def make_alpha_interpolator(ts, xs, ys, k_alpha=K_ALPHA):
 
     # Now let's make the guy to interpolate
     all_in, all_out = [], []
-    t_eval = np.linspace(ts[0], ts[-1], num=len(ts)) # TODO: FIX
+    t_eval = np.linspace(ts[0], ts[-1], num=3*len(ts)) # TODO: FIX
     for s_ind in range(ns):
         for t in t_eval: # Could do anything here
             x_val, y_val = x_splines[s_ind](t), y_splines[s_ind](t)
@@ -298,13 +411,15 @@ def make_alpha_plot(ts, xs, ys, k_alpha=K_ALPHA):
 
         # Make a mesh grid so we can do this
         (x_min,x_max), (y_min, y_max) = get_bounds(xs, ys)
+        # TODO: FIX
+        (x_min, x_max), (y_min, y_max) = (-2.5, 2.5), (-1, 3.25)
         x = np.linspace(x_min, x_max, 200)
         y = np.linspace(y_min, y_max, 200)
         X, Y = np.meshgrid(x, y)
 
         # Interpoalte this mamajama
         Z = np.rad2deg(alpha_interp(X, Y))
-        Z = smooth_grid_field(Z, x, y, method="helmholtz", length_scale=0.025)  # pick a physical length
+        # Z = smooth_grid_field(Z, x, y, method="helmholtz", length_scale=0.025)  # pick a physical length
 
         # Get the colorscale we want
         z_flat = Z.flatten()
@@ -321,9 +436,91 @@ def make_alpha_plot(ts, xs, ys, k_alpha=K_ALPHA):
         plt.gcf().set_dpi(1000)
         plt.savefig(f'../out/chirality_prediction.png', dpi=1000, bbox_inches='tight')
 
+def plot_xy_spline_fits(
+    ts,
+    xs,
+    ys,
+    s_inds=None,
+    dense=400,
+    show=True,
+    savepath=None,
+    max_curves=50,
+    marker_size=10,
+    line_width=1.5,
+):
+    """Plot x(t) and y(t) sample points and their fitted cubic splines.
+
+    This is meant as a quick sanity-check that `to_spline_set()` is fitting what you
+    think it is fitting.
+
+    Notes about your data layout
+    ----------------------------
+    In this file, `xs` and `ys` are lists over time index `l` (same length as `ts`).
+    Each entry `xs[l]` / `ys[l]` is a list/array over spatial index `s_ind`.
+    For a fixed `s_ind`, the sample points are:
+        t -> x_vals[l] = xs[l][s_ind]
+        t -> y_vals[l] = ys[l][s_ind]
+    """
+    import numpy as np
+    from matplotlib import pyplot as plt
+
+    ts = np.asarray(ts, dtype=float)
+    if len(xs) != len(ts) or len(ys) != len(ts):
+        raise ValueError("xs and ys must have the same outer length as ts")
+    if len(ts) < 2:
+        raise ValueError("Need at least 2 time points to plot spline fits")
+
+    # Fit splines
+    x_splines, y_splines = to_spline_set(ts, xs, ys)
+    N = len(x_splines)
+
+    # Choose which curves to show
+    if s_inds is None:
+        if N <= max_curves:
+            s_inds = list(range(N))
+        else:
+            s_inds = np.linspace(0, N - 1, num=max_curves, dtype=int).tolist()
+    else:
+        s_inds = list(s_inds)
+
+    t_dense = np.linspace(ts[0], ts[-1], int(dense))
+
+    fig, (ax_x, ax_y) = plt.subplots(2, 1, sharex=True, figsize=(10, 7))
+
+    for s_ind in s_inds:
+        if s_ind < 0 or s_ind >= N:
+            continue
+
+        x_vals = np.array([xs[l][s_ind] for l in range(len(ts))], dtype=float)
+        y_vals = np.array([ys[l][s_ind] for l in range(len(ts))], dtype=float)
+
+        # sample points
+        # ax_x.scatter(ts, x_vals, s=marker_size)
+        # ax_y.scatter(ts, y_vals, s=marker_size)
+
+        # spline curves
+        ax_x.plot(t_dense, x_splines[s_ind](t_dense, 2), linewidth=line_width)
+        ax_y.plot(t_dense, y_splines[s_ind](t_dense, 2), linewidth=line_width)
+
+    ax_x.set_ylabel("x(t)")
+    ax_y.set_ylabel("y(t)")
+    ax_y.set_xlabel("t")
+    ax_x.set_title("Sample points (markers) vs. CubicSpline fits (lines)")
+
+    fig.tight_layout()
+    if savepath is not None:
+        fig.savefig(savepath, bbox_inches="tight")
+    if show:
+        plt.show()
+
+    return fig, (ax_x, ax_y)
+
+
 
 def main():
     print('Starting to produce chirality plot...')
+    # s_inds = list(range(1, 25, 5))
+    # plot_xy_spline_fits(all_ts, all_xs, all_ys, s_inds, savepath=None, show=True)
     make_alpha_plot(all_ts, all_xs, all_ys)
     print('Chirality Plot Complete!')
 
