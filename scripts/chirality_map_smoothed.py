@@ -78,7 +78,7 @@ def resample_all_curves(all_xs, all_ys, all_thetas, num=50):
         new_thetas.append(thr)
     return new_xs, new_ys, new_thetas
 
-# all_xs, all_ys, all_thetas = resample_all_curves(all_xs, all_ys, all_thetas, num=50)
+# all_xs, all_ys, all_thetas = resample_all_curves(all_xs, all_ys, all_thetas, num=10)
 
 def get_bounds(xs, ys, extra_factor = .1):
     # Run the main guy to do main guy things
@@ -116,7 +116,7 @@ def to_spline_set_old(ts, xs, ys):
 
     return x_splines, y_splines
 
-def to_spline_set(ts, xs, ys, n_intervals=5, smooth_fallback=1e-6):
+def to_spline_set(ts, xs, ys, n_intervals=2, smooth_fallback=1e-6):
     """
     Drop-in replacement for to_spline_set() that does *spline regression* instead of
     exact interpolation, to stabilize x', y', x'', y''.
@@ -243,7 +243,7 @@ def make_alpha_interpolator(ts, xs, ys, k_alpha=K_ALPHA):
 
     # Now let's make the guy to interpolate
     all_in, all_out = [], []
-    t_eval = np.linspace(ts[0], ts[-1], num=3*len(ts)) # TODO: FIX
+    t_eval = np.linspace(ts[0], ts[-1], num=len(ts)) # TODO: FIX
     for s_ind in range(ns):
         for t in t_eval: # Could do anything here
             x_val, y_val = x_splines[s_ind](t), y_splines[s_ind](t)
@@ -495,12 +495,12 @@ def plot_xy_spline_fits(
         y_vals = np.array([ys[l][s_ind] for l in range(len(ts))], dtype=float)
 
         # sample points
-        # ax_x.scatter(ts, x_vals, s=marker_size)
-        # ax_y.scatter(ts, y_vals, s=marker_size)
+        ax_x.scatter(ts, x_vals, s=marker_size)
+        ax_y.scatter(ts, y_vals, s=marker_size)
 
         # spline curves
-        ax_x.plot(t_dense, x_splines[s_ind](t_dense, 2), linewidth=line_width)
-        ax_y.plot(t_dense, y_splines[s_ind](t_dense, 2), linewidth=line_width)
+        ax_x.plot(t_dense, x_splines[s_ind](t_dense), linewidth=line_width)
+        ax_y.plot(t_dense, y_splines[s_ind](t_dense), linewidth=line_width)
 
     ax_x.set_ylabel("x(t)")
     ax_y.set_ylabel("y(t)")
@@ -519,7 +519,7 @@ def plot_xy_spline_fits(
 
 def main():
     print('Starting to produce chirality plot...')
-    # s_inds = list(range(1, 25, 5))
+    s_inds = list(range(1, 25, 5))
     # plot_xy_spline_fits(all_ts, all_xs, all_ys, s_inds, savepath=None, show=True)
     make_alpha_plot(all_ts, all_xs, all_ys)
     print('Chirality Plot Complete!')
