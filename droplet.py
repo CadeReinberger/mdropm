@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 from scipy.optimize import root_scalar
+from ca_bdry_computer import compute_p_star_over_gamma
 
 @dataclass
 class droplet:
@@ -29,16 +30,15 @@ class constructors:
         ca_theta = np.pi/2 - psi
         return droplet(n, 2*np.pi, theta, x, y, ca_theta)
 
-    def make_drop_about_to_drop(n, R, hs, pps):
+    def make_drop_about_to_drop(n, R, HL, hs, pps):
         N = 4*n
         theta = np.linspace(0, 2*np.pi, num=N+1)[:-1]
         x, y = R*np.cos(theta), R*np.sin(theta)
-        h = np.array([hs.h(x[ind], y[ind]) for ind in range(N)])
+        h = np.array([hs.h(xv, yv) for (xv, yv) in zip(x, y)])
         dh_dn = np.array([np.cos(theta[ind])*hs.hx(x[ind], y[ind]) + np.sin(theta[ind])*hs.hy(x[ind], y[ind]) for ind in range(N)])
         psi = np.arctan(dh_dn)
-        min_ca = lambda p: min(-psi + np.arccos(-p*h/pps.gamma))-pps.theta_r
-        p_max = pps.gamma / min(h)
-        p_star = root_scalar(min_ca, method='bisect', bracket=(-p_max, p_max))
-        ca_theta = -psi + np.arccos(-p_star * h / pps.gamma)
+        p_star_over_gamma = compute_p_star_over_gamma(hs, R, HL, pps) 
+        ca_theta = -psi + np.arccos(-p_star_over_gamma * h)
+        print(f'ca_theta: {ca_theta}')
         return droplet(N, 2*np.pi, theta, x, y, ca_theta)
 

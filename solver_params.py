@@ -35,12 +35,12 @@ class solver_params:
     #------------------------------------------#
     RADAU_DT = .5 # Minutes
     SUBDIV_RADAU = True
-    RADAU_EVAL_LINSPACE_N = 5 
+    RADAU_EVAL_LINSPACE_N = 10 
     RADAU_OUT_EVERY = 1
-    T_FIN = 30
+    T_FIN = 3
     VERBOSE = True
 
-    END_AREA_RATIO = .25 # Make this 0 to not use
+    END_AREA_RATIO = .85 # Make this 0 to not use
     CHECK_SELF_INTERSECTION_DT = .5 # Can be None
     #-------------------------------------------#
     
