@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from chirality_map import make_alpha_interpolator_loc
 
 # --- Global constants (as requested) ---
-K_ALPHA = 25
+K_ALPHA = 4
 R_EFF = 0.95 * 3
 ANG_EVAL = np.deg2rad(45) #np.arccos(1/3)
 

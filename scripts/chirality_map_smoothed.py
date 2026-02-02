@@ -7,7 +7,7 @@ current_area_loc = '../out/results.pkl'
 with open(current_area_loc, 'rb') as in_file:
     res_dict = pickle.load(in_file)
 
-K_ALPHA = 1 # Minutes
+K_ALPHA = .1 # 1 # Minutes
 
 start_ind = 2
 UE = 1
@@ -116,7 +116,7 @@ def to_spline_set_old(ts, xs, ys):
 
     return x_splines, y_splines
 
-def to_spline_set(ts, xs, ys, n_intervals=2, smooth_fallback=1e-6):
+def to_spline_set(ts, xs, ys, n_intervals=5, smooth_fallback=1e-6):
     """
     Drop-in replacement for to_spline_set() that does *spline regression* instead of
     exact interpolation, to stabilize x', y', x'', y''.
@@ -234,7 +234,7 @@ def compute_alpha(x_spl, y_spl, t, k_alpha=K_ALPHA):
     xtt, ytt = x_spl(t, 2), y_spl(t, 2)
     if (xt**2 + yt**2) == 0:
         return None
-    return k_alpha * (xt*ytt - yt*xtt) / (xt**2 + yt**2)
+    return k_alpha * (xt*ytt - yt*xtt) / (xt**2 + yt**2)**1.5
 
 def make_alpha_interpolator(ts, xs, ys, k_alpha=K_ALPHA):
     # First compute all the splines since we'll need them
@@ -424,7 +424,7 @@ def make_alpha_plot(ts, xs, ys, k_alpha=K_ALPHA):
         # Get the colorscale we want
         z_flat = Z.flatten()
         z_flat_nonzero = z_flat[z_flat != 0]
-        vlim = np.percentile(np.abs(z_flat_nonzero), 90)
+        vlim = np.percentile(np.abs(z_flat_nonzero), 80)
 
         # Make the plot
         plt.figure() # make a new plot from the old one

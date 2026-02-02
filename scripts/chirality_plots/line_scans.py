@@ -41,7 +41,7 @@ def compute_alpha(x_spl, y_spl, t, k_alpha=K_ALPHA):
     xtt, ytt = x_spl(t, 2), y_spl(t, 2)
     if (xt**2 + yt**2) == 0:
         return None
-    return k_alpha * (xt*ytt - yt*xtt) / (xt**2 + yt**2)**1 # 1 power for length delay
+    return k_alpha * (xt*ytt - yt*xtt) / (xt**2 + yt**2)**1.5 # 1 power for length delay
 
 def make_alpha_interpolator(ts, xs, ys, k_alpha=K_ALPHA):
     # First compute all the splines since we'll need them

@@ -7,7 +7,7 @@ current_area_loc = '../../archived/run_25_half/out/results.pkl'
 with open(current_area_loc, 'rb') as in_file:
     res_dict = pickle.load(in_file)
 
-K_ALPHA = 2 # Minutes
+K_ALPHA = .2 # Minutes
 
 start_ind = 2
 UE = 1
@@ -439,6 +439,9 @@ def make_alpha_plot(ts, xs, ys, k_alpha=K_ALPHA):
 
         # Interpoalte this mamajama
         Z = np.rad2deg(alpha_interp(X, Y))
+        
+        with open('data.pkl', 'wb') as file:
+            pickle.dump(Z, file)
         # Z = smooth_grid_field(Z, x, y, method="helmholtz", length_scale=0.025)  # pick a physical length
 
         # Get the colorscale we want
