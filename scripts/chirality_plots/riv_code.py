@@ -43,7 +43,7 @@ Z = None
 with open('data.pkl', 'rb') as file:
     Z = pkl.load(file)
     Z = np.flipud(Z)
-    print('We got Z lmfao')
+    print('We got Z or something jfc')
 
 x = np.linspace(0, 4, Z.shape[1])  # Adjust range as needed
 y = np.linspace(0, 4, Z.shape[0])
