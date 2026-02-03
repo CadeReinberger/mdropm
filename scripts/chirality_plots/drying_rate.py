@@ -10,12 +10,23 @@ dt = [dt[i] for i in inds]
 gfs = [gfs[i] for i in inds]
 
 
-plt.scatter(dt, gfs, label='data')
-plt.plot((30, 30), (min(gfs), max(gfs)), label='Predicted Evap/CL Cutoff')
+plt.rcParams.update({
+        "font.size": 16,
+        "axes.labelsize": 16,
+        "axes.titlesize": 24,
+        "xtick.labelsize": 16,
+        "ytick.labelsize": 16,
+        "legend.fontsize": 16,
+    })
 
-plt.xlabel('Drying time (min)')
-plt.ylabel('G-factor slope')
-plt.legend()
 
-#plt.plot(dt, gfs)
+plt.scatter(dt, gfs, label='Measured Data')
+plt.plot((30, 30), (min(gfs), max(gfs)), 'k--', label='Predicted Evaporation/Contact-Line Cutoff')
+
+plt.title('Drying Rate Data')
+plt.xlabel('Drying time (min)', fontsize=24)
+plt.ylabel('Maximum g-factor', fontsize=24)
+plt.legend(fontsize=18)
+plt.grid(alpha=.25)
+
 plt.show()

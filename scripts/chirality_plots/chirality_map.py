@@ -116,7 +116,7 @@ def to_spline_set_old(ts, xs, ys):
 
     return x_splines, y_splines
 
-def to_spline_set(ts, xs, ys, n_intervals=8, smooth_fallback=1e-6):
+def to_spline_set(ts, xs, ys, n_intervals=5, smooth_fallback=1e-6):
     """
     Drop-in replacement for to_spline_set() that does *spline regression* instead of
     exact interpolation, to stabilize x', y', x'', y''.
@@ -273,6 +273,8 @@ def make_alpha_interpolator_loc(loc, k_alpha=K_ALPHA):
     all_xs = [vec[:n] for vec in all_vecs]
     all_ys = [vec[n:2*n] for vec in all_vecs]
     all_thetas = [vec[2*n:3*n] for vec in all_vecs]
+
+    # all_xs, all_ys, all_thetas = resample_all_curves(all_xs, all_ys, all_thetas, num=5)
 
     return make_alpha_interpolator(all_ts, all_xs, all_ys, k_alpha=k_alpha)
 
@@ -432,14 +434,13 @@ def make_alpha_plot(ts, xs, ys, k_alpha=K_ALPHA):
         # Make a mesh grid so we can do this
         (x_min,x_max), (y_min, y_max) = get_bounds(xs, ys)
         # TODO: FIX
-        (x_min, x_max), (y_min, y_max) = (-1.625, 1.625), (0, 3.25)
+        (x_min, x_max), (y_min, y_max) = (-1.5, 1.5), (0, 3.25)
         x = np.linspace(x_min, x_max, 1000)
         y = np.linspace(y_min, y_max, 1000)
         X, Y = np.meshgrid(x, y)
 
         # Interpoalte this mamajama
-        Z = np.rad2deg(alpha_interp(X, Y))
-        
+        Z = -np.rad2deg(alpha_interp(X, Y))
         with open('data.pkl', 'wb') as file:
             pickle.dump(Z, file)
         # Z = smooth_grid_field(Z, x, y, method="helmholtz", length_scale=0.025)  # pick a physical length

@@ -59,8 +59,8 @@ y = np.linspace(0, 4, Z.shape[0])
 # Define a curved path using control points
 # Method 1: Simple interpolation through points
 control_points = np.array([
-    [0.0, 3.4],
-    [2.0, 3.90],
+    [0.0, 2.9],
+    [2.0, 3.5],
     # [1, 2],
     # [2, 2],
     [4.0, 2.9]
@@ -99,45 +99,62 @@ def create_scans_from_path(ycurve):
 curves = {}
 scans = {}
 for i in range(4):
-    curves['y'+str(i)] = curve_y - i*0.5
+    curves['y'+str(i)] = curve_y - i*0.4
     scans['scan'+str(i)] = create_scans_from_path(curves['y'+str(i)])
-    
-    
+
+'''
+import sys
+if __name__ != '__main__':
+    sys.exit(0)
+'''
+
+
 #%%
 #plotting parameters
 border_width = 3
 labeflsize = 28
 colors = ['c','m','y','g']
-g_range = 2 # 0.15
+g_range = 2.5 # 0.15
 lwidth = 4
 
+
+plt.rcParams.update({
+        "font.size": 16,
+        "axes.labelsize": 16,
+        "axes.titlesize": 24,
+        "xtick.labelsize": 16,
+        "ytick.labelsize": 16,
+        "legend.fontsize": 16,
+    })
 
 # # Plot results
 # fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 fig,ax1 = plt.subplots(figsize=(7.5,6))
 # Plot heatmap with curve overlay
-im = ax1.imshow(Z, extent=[x.min(), x.max(), y.min(), y.max()],
+im = ax1.imshow(Z.T, extent=[x.min(), x.max(), y.min(), y.max()],
                     cmap='seismic', aspect='equal', vmin = -g_range, vmax = g_range)
-ax1.set_xticks([])
-ax1.set_yticks([])
+#ax1.set_xticks([])
+#ax1.set_yticks([])
 for location in ["top","bottom","left","right"]:
     ax1.spines[location].set_linewidth(border_width)
     
 i=0
 for curve in curves:
-    ax1.plot(curve_x, curves[curve], color = colors[i], linewidth=lwidth)
+    ax1.plot(4-curves[curve], curve_x, color = colors[i], linewidth=lwidth)
     i+=1
+
+ax1.plot(4-(np.sqrt(14-.9*(curve_x-2)**2)-.09), curve_x, color='black', linewidth=6)
 # ax1.plot(control_points[:, 0], control_points[:, 1], 'co', 
 #              markersize=8, label='Control points')
-# ax1.set_xlabel('X')
-# ax1.set_ylabel('Y')
-# ax1.set_title('Heatmap with Curved Scan Path')
+ax1.set_xlabel('X (mm)')
+ax1.set_ylabel('Y (mm)')
+ax1.set_title('Predicted Skewness Angle Alpha')
 cbar = fig.colorbar(im, pad = 0.02)
 cbar.outline.set_linewidth(border_width)
 cbar.ax.tick_params(width = border_width, length = 6)
-cbar.ax.set_yticklabels([])
+# cbar.ax.set_yticklabels([])
 
-# cbar.set_label('g-factor', fontsize = labeflsize)
+cbar.set_label('Alpha (Degrees)', fontsize = labeflsize)
 
 
 plt.tight_layout()
@@ -155,13 +172,13 @@ for scan in scans:
     
 ax2.set(xlim = [0,4], ylim = [-g_range,g_range])
 ax2.set_xticks([0,1,2,3,4])
-ax2.yaxis.tick_right()
-ax2.set_xticklabels([])
-ax2.set_yticklabels([])
-# ax2.set_xlabel('Distance along curve')
-# ax2.set_ylabel('Value')
-# ax2.set_title('Line Scan Profile')
-# ax2.grid(True, alpha=0.3)
+# ax2.yaxis.tick_right()
+# ax2.set_xticklabels([])
+# ax2.set_yticklabels([])
+ax2.set_xlabel('Distance along curve (mm)')
+ax2.set_ylabel('Skewness Angle (Degrees)')
+ax2.set_title('Line Scan Profile')
+ax2.grid(True, alpha=0.3)
 for location in ["top","bottom","left","right"]:
     ax2.spines[location].set_linewidth(border_width)
 ax2.tick_params(width = border_width, length = 6)
@@ -179,3 +196,4 @@ plt.show()
 
 # # Uncomment to use sinusoidal path instead:
 # # curve_x, curve_y = create_sinusoidal_path()
+
