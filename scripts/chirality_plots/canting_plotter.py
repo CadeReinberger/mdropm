@@ -55,8 +55,9 @@ def compute_point_average(alpha_int, pt, eps=.1, Nrho=50, Nphi=50):
 dh_riv = 2 * np.array([0.00046292408994360674, 0.00046292408994360674, 0.04907405786553596, 0.04861105960092645, 0.06342596562310825, 0.06388886498816321, 0.07268513971886222, 0.12361114119305902, 0.18518521265728374, 0.12407404055811398, 0.09166663452431145, 0.18796300444583172, 0.24537033877745715, 0.26018514590008446, 0.31666663205182266, 0.31666663205182266, 0.3837963365429207, 0.4296296538050764, 0.501388846444497, 0.5569443855167933])
 kg_riv = np.array([0.3571428912026467, 0.3571428912026467, 0.5194806793644906, 0.5373377935804468, 0.4935064980102673, 0.4496752891377342, 0.4253246946064571, 0.41396106070582195, 0.49675341156322045, 0.6493506324614973, 0.8977272515454614, 0.7532468376925127, 0.8392856686146327, 0.8652596765735633, 1.0194805709924328, 1.0649351065949728, 0.9334414799773735, 0.8474026490552535, 0.8279220347139976, 0.7759741054937828])
 
-def main():
-    base_dir = (Path(__file__).resolve() / "../canting_tests/").resolve()
+def plot_canting(ax, base_dir=None, include_experimental=True):
+    if base_dir is None:
+        base_dir = (Path(__file__).resolve() / "../canting_tests/").resolve()
 
     if not base_dir.exists():
         raise FileNotFoundError(f"Base directory not found: {base_dir}")
@@ -141,43 +142,50 @@ def main():
         )
 
     # --- Plot ---
-    plt.figure(figsize=(8, 5.5), dpi=160)
-    plt.plot(ht_ratio_samp, int_samp, 'k--', alpha=.85)
-    plt.scatter(ht_ratios_sorted, k_gs_sorted, s=55, alpha=0.85, label='Simulated')
+    ax.plot(ht_ratio_samp, int_samp, "k--", alpha=0.85)
+    ax.scatter(ht_ratios_sorted, k_gs_sorted, s=55, alpha=0.85, label="Simulated")
 
     print(f'kgs: {k_gs_sorted}')
 
     
-    plt.rcParams.update({
-        "font.size": 24,
-        "axes.labelsize": 32,
-        "axes.titlesize": 32,
-        "xtick.labelsize": 24,
-        "ytick.labelsize": 24,
-        "legend.fontsize": 24
-        })
+    plt.rcParams.update(
+        {
+            "font.size": 24,
+            "axes.labelsize": 32,
+            "axes.titlesize": 32,
+            "xtick.labelsize": 24,
+            "ytick.labelsize": 24,
+            "legend.fontsize": 24,
+        }
+    )
 
     # print(f'dh_riv: {dh_riv}')
     # print(f'kg_riv: {kg_riv}')
     # plt.plot(dh_riv, kg_riv, 'm--', label='Experimental', alpha=.85)
-    plt.scatter(dh_riv, kg_riv, color='m', s=55, alpha=.85, label='Experimental')
+    if include_experimental:
+        ax.scatter(dh_riv, kg_riv, color="m", s=55, alpha=0.85, label="Experimental")
 
-    plt.xlabel("Relative Height Change", fontsize=24)
-    plt.legend()
-    plt.ylabel("g-factor slope", fontsize=24)
-    plt.title("Canting Chirality Series")
+    ax.set_xlabel("Relative Height Change", fontsize=24)
+    ax.legend()
+    ax.set_ylabel("g-factor slope", fontsize=24)
+    ax.set_title("Canting Chirality Series")
 
     # plt.xlim(-.05, 1.05)
     # plt.ylim(0, 1.2)
     
-    plt.grid(True, alpha=0.25)
-    plt.tight_layout()
+    ax.grid(True, alpha=0.25)
 
-    out_name = "canting_chirality_series.png"  # lowercase, no spaces
+    return len(ht_ratios)
+
+
+def main():
+    fig, ax = plt.subplots(figsize=(8, 5.5), dpi=160)
+    n_points = plot_canting(ax)
+    plt.tight_layout()
+    out_name = "canting_chirality_series.png"
     plt.savefig(out_name, bbox_inches="tight")
-    print(f"Saved: {out_name}  (N={len(ht_ratios)} points)")
+    print(f"Saved: {out_name}  (N={n_points} points)")
 
 
 if __name__ == "__main__":
     main()
-
