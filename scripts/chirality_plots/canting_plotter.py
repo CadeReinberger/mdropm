@@ -57,7 +57,7 @@ kg_riv = np.array([0.3571428912026467, 0.3571428912026467, 0.5194806793644906, 0
 
 def plot_canting(ax, base_dir=None, include_experimental=True):
     if base_dir is None:
-        base_dir = (Path(__file__).resolve() / "../canting_tests/").resolve()
+        base_dir = (Path(__file__).resolve() / "../../../canting_tests_2/").resolve()
 
     if not base_dir.exists():
         raise FileNotFoundError(f"Base directory not found: {base_dir}")
@@ -123,10 +123,12 @@ def plot_canting(ax, base_dir=None, include_experimental=True):
     k_gs = np.asarray(k_gs, dtype=float)
 
     sorted_inds = sorted(list(range(len(ht_ratios))), key=lambda i: ht_ratios[i])
-    sorted_inds = [sorted_inds[i] for i in (0, 2, 4, 7)]
+    
+    #sorted_inds = [sorted_inds[i] for i in (0, 2, 4, 7)]
     # del(sorted_inds[0])
     # del(sorted_inds[1])
     # del(sorted_inds[-2])
+    
     ht_ratios_sorted = [ht_ratios[si] for si in sorted_inds]
     k_gs_sorted = [k_gs[si] for si in sorted_inds]
     # k_gs_sorted[0] = 4*k_gs_sorted[0]
