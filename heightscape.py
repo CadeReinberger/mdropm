@@ -14,14 +14,7 @@ class heightscape:
         self.H = H
 
     def to_pickle_dict(self):
-        res = {'ufl_str' : self.ufl_str,
-                'h' : self.h,
-                'hx' : self.hx,
-                'hy' : self.hy,
-                'hxx' : self.hxx,
-                'hxy' : self.hxy, 
-                'hyy' : self.hyy,
-                'H' : self.H}
+        res = {'ufl_str' : self.ufl_str}
         return res
 
 class constructors:

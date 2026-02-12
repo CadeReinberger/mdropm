@@ -31,7 +31,7 @@ def pickle_setup(drop, pu, out_file = 'out/setup.pkl'):
     sp_dict = asdict(pu.sol_ps)
 
     # Now, we pickle the tapescape
-    tp_dict = asdict(pu.picklable())
+    tp_dict = pu.tpscp.picklable()
 
     # Now, we gotta pickle the droplet
     drop_dict = drop.to_pickle_dict()
