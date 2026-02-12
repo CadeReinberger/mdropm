@@ -195,8 +195,8 @@ def solve_problem(starting_drop, prob_univ):
     starting_area = compute_area_shoelace(starting_drop.x, starting_drop.y)
 
     # Initialize our ouput things
-    out_t = []
-    out_x = []
+    out_t = [cur_t]
+    out_x = [cur_x]
 
     while True:
 

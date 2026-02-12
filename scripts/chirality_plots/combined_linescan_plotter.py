@@ -1,8 +1,91 @@
-from riv_code import scans as t_scans
-from riv_og import scans as e_scans
-
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
+from scipy.ndimage import map_coordinates
+import pickle as pkl
+
+
+def _build_riv_code_data():
+    Z = None
+    with open("data.pkl", "rb") as file:
+        Z = pkl.load(file)
+        Z = np.flipud(Z)
+
+    x = np.linspace(0, 4, Z.shape[1])
+    y = np.linspace(0, 4, Z.shape[0])
+
+    control_points = (
+        np.array(
+            [
+                [0.0, 2.9],
+                [2.0, 3.5],
+                [4.0, 2.9],
+            ]
+        )
+        - np.array([0, 0.4])
+    )
+
+    t = np.linspace(0, 1, len(control_points))
+    t_fine = np.linspace(0, 1, 500)
+
+    fx = interp1d(t, control_points[:, 0], kind="quadratic")
+    fy = interp1d(t, control_points[:, 1], kind="quadratic")
+
+    curve_x = fx(t_fine)
+    curve_y = fy(t_fine)
+
+    def create_scans_from_path(ycurve):
+        x_idx = np.interp(curve_x, x, np.arange(len(x)))
+        y_idx = np.interp(ycurve, y, np.arange(len(y)))
+        coords = np.array([y_idx, x_idx])
+        line_scan = map_coordinates(Z, coords, order=1)
+        return line_scan
+
+    curves = {}
+    scans = {}
+    for i in range(4):
+        curves[f"y{i}"] = curve_y - i * 0.4
+        scans[f"scan{i}"] = create_scans_from_path(curves[f"y{i}"])
+
+    return Z, x, y, curve_x, curves, scans
+
+
+def _build_riv_og_data():
+    Z = np.loadtxt("Tom_Science_symmetric_linear_transposed.csv", delimiter=",")
+    x = np.linspace(0, 4, Z.shape[1])
+    y = np.linspace(0, 4, Z.shape[0])
+
+    control_points = np.array(
+        [
+            [0.0, 3.4],
+            [2.0, 3.90],
+            [4.0, 2.9],
+        ]
+    ) - np.array([0, 0.1])
+
+    t = np.linspace(0, 1, len(control_points))
+    t_fine = np.linspace(0, 1, 500)
+
+    fx = interp1d(t, control_points[:, 0], kind="quadratic")
+    fy = interp1d(t, control_points[:, 1], kind="quadratic")
+
+    curve_x = fx(t_fine)
+    curve_y = fy(t_fine)
+
+    def create_scans_from_path(ycurve):
+        x_idx = np.interp(curve_x, x, np.arange(len(x)))
+        y_idx = np.interp(ycurve, y, np.arange(len(y)))
+        coords = np.array([y_idx, x_idx])
+        line_scan = map_coordinates(Z, coords, order=1)
+        return line_scan
+
+    curves = {}
+    scans = {}
+    for i in range(4):
+        curves[f"y{i}"] = curve_y - i * 0.5
+        scans[f"scan{i}"] = create_scans_from_path(curves[f"y{i}"])
+
+    return Z, x, y, curve_x, curves, scans
 
 
 def rescale_x_about_zero(xe, scane):
@@ -156,7 +239,7 @@ def plot_line_scans_dual_axis(t_scans: dict, e_scans: dict):
         "legend.fontsize": 16,
     })
 
-    fig, ax_t = plt.subplots(figsize=(9, 5.2), constrained_layout=True)
+    fig, ax_t = plt.subplots(figsize=(8, 8), constrained_layout=True)
     ax_e = ax_t.twinx()
     
     cols = ('c', 'm', 'y', 'g')
@@ -167,13 +250,14 @@ def plot_line_scans_dual_axis(t_scans: dict, e_scans: dict):
 
     # ---- plot experimental (dashed), scaled for overlap ----
     for k, xe, ye in zip(e_keys, x_e, e_curves):
-        xep = rescale_x_about_zero(xe, a*ye+b) - 2
-        ax_t.plot(xep, a * ye + b, lw=1.8, ls="--", alpha=0.9, color=cols[int(k[-1])])
+        ax_t.plot(xe, a*ye+b, lw=1.8, ls='--', alpha=.9, color=cols[int(k[-1])])
+        # xep = rescale_x_about_zero(xe, a*ye+b) - 2
+        #ax_t.plot(xep, a * ye + b, lw=1.8, ls="--", alpha=0.9, color=cols[int(k[-1])])
 
-    ax_t.set_title(title)
-    ax_t.set_xlabel(xlabel)
-    ax_t.set_ylabel(t_ylabel)
-    ax_e.set_ylabel(e_ylabel)
+    ax_t.set_title("")
+    ax_t.set_xlabel("")
+    ax_t.set_ylabel("")
+    ax_e.set_ylabel("")
 
     # Right axis is the inverse mapping of left axis so ticks line up
     yL0, yL1 = ax_t.get_ylim()
@@ -184,13 +268,27 @@ def plot_line_scans_dual_axis(t_scans: dict, e_scans: dict):
 
     ax_t.grid(True, which="major", alpha=0.25)
     ax_t.set_xlim(-2.0, 2.0)
+    ax_t.tick_params(
+        labelbottom=False,
+        labelleft=False,
+        labelright=False,
+        labeltop=False,
+    )
+    ax_e.tick_params(
+        labelleft=False,
+        labelright=False,
+        labelbottom=False,
+        labeltop=False,
+    )
 
     # legend (can get big; but it’s accurate)
     # ax_t.legend(loc="best", frameon=True, ncol=1)
 
+    fig.savefig("combined_linescan_plotter.png", dpi=300)
     plt.show()
 
 
 # --- usage ---
+t_scans = _build_riv_code_data()[-1]
+e_scans = _build_riv_og_data()[-1]
 plot_line_scans_dual_axis(t_scans, e_scans)
-

@@ -21,9 +21,9 @@ def plot_drying_rate(ax):
         -0.0149,
     ]
 
-    inds = sorted(list(range(len(dt))), key=lambda i: dt[i])
-    dt = [dt[i] for i in inds]
-    gfs = [gfs[i] for i in inds]
+    # inds = sorted(list(range(len(dt))), key=lambda i: dt[i])
+    # dt = [dt[i] for i in inds]
+    # gfs = [gfs[i] for i in inds]
 
     plt.rcParams.update(
         {
@@ -36,25 +36,35 @@ def plot_drying_rate(ax):
         }
     )
 
-    ax.scatter(dt, gfs, label="Measured Data")
+    first_dt = dt[:7]
+    first_gfs = gfs[:7]
+    rest_dt = dt[7:]
+    rest_gfs = gfs[7:]
+
+    del(first_dt[3])
+    del(first_gfs[3])
+
+    ax.scatter(first_dt, first_gfs, color="tab:blue", label="Series 1")
+    ax.scatter(rest_dt, rest_gfs, color="tab:orange", label="Series 2")
     ax.plot(
-        (30, 30),
+        (35, 35),
         (min(gfs), max(gfs)),
         "k--",
-        label="Predicted Evaporation/Contact-Line Cutoff",
+        label="Predicted Regime Change",
     )
 
     ax.set_title("Drying Rate Data")
     ax.set_xlabel("Drying time (min)", fontsize=24)
-    ax.set_ylabel("Maximum g-factor", fontsize=24)
+    ax.set_ylabel("G-factor Slope", fontsize=24)
     ax.legend(fontsize=18)
     ax.grid(alpha=0.25)
 
 
 def main():
-    fig, ax = plt.subplots(figsize=(6, 4.5))
+    fig, ax = plt.subplots(figsize=(8, 8))
     plot_drying_rate(ax)
-    plt.tight_layout()
+    fig.tight_layout()
+    fig.savefig("drying_rate.png", dpi=300)
     plt.show()
 
 

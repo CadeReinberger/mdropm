@@ -39,20 +39,22 @@ def run_default_slight(ht_ratio):
     pu = problem_universe(hs, ts, sps, pps)
 
     # Make the starting droplet
-    drop = droplet.constructors.make_drop_about_to_drop(5, 3, 5, hs, pps)
+    drop = droplet.constructors.make_drop_about_to_drop(10, 3, 5, hs, pps)
 
+    print(f"Well we're trying to solve I think...")
     # Solve the droplet, only as far as we need
     out_t, out_x = solve_problem(drop, pu)
 
     # Make the output filename 
     run_id = uuid.uuid4().hex
-    os.mkdir(f'canting_tests/{run_id}')
+    os.mkdir(f'canting_tests_2/{run_id}')
 
     # Pickle the result
-    pickle_output(out_t, out_x, f'canting_tests/{run_id}/results.pkl')
-    pickle_canting(ht_front, ht_back, 3, f'canting_tests/{run_id}/setup.pkl')
+    pickle_output(out_t, out_x, f'canting_tests_2/{run_id}/results.pkl')
+    pickle_canting(ht_front, ht_back, 3, f'canting_tests_2/{run_id}/setup.pkl')
 
-ht_ratios = np.linspace(0, 2, num=10)[1:]
+# Nice and easy I guess
+ht_ratios = np.linspace(0, 2, num=8)[4:]
 for ht_ratio in ht_ratios:
     big_print(f'RUNNING FOR {ht_ratio}')
     run_default_slight(ht_ratio)

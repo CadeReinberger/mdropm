@@ -116,7 +116,7 @@ def to_spline_set_old(ts, xs, ys):
 
     return x_splines, y_splines
 
-def to_spline_set(ts, xs, ys, n_intervals=5, smooth_fallback=1e-6):
+def to_spline_set(ts, xs, ys, n_intervals=2, smooth_fallback=1e-6):
     """
     Drop-in replacement for to_spline_set() that does *spline regression* instead of
     exact interpolation, to stabilize x', y', x'', y''.

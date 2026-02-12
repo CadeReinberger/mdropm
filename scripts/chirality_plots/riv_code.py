@@ -8,6 +8,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.interpolate import interp1d
 from scipy.ndimage import map_coordinates
 import pickle as pkl
@@ -145,10 +146,120 @@ def plot_riv_code(ax_heatmap, ax_line, add_colorbar=True):
     return im
 
 
+def plot_riv_code_heatmap(ax_heatmap, add_colorbar=True, strip_labels=False):
+    Z, x, y, curve_x, curves, _scans = _build_riv_code_data()
+
+    border_width = 3
+    labeflsize = 28
+    colors = ["c", "m", "y", "g"]
+    g_range = 2.5
+    lwidth = 4
+
+    plt.rcParams.update(
+        {
+            "font.size": 16,
+            "axes.labelsize": 16,
+            "axes.titlesize": 24,
+            "xtick.labelsize": 16,
+            "ytick.labelsize": 16,
+            "legend.fontsize": 16,
+        }
+    )
+
+    im = ax_heatmap.imshow(
+        -Z.T,
+        extent=[x.min(), x.max(), y.min(), y.max()],
+        cmap="seismic",
+        aspect="equal",
+        vmin=-g_range,
+        vmax=g_range,
+    )
+    for location in ["top", "bottom", "left", "right"]:
+        ax_heatmap.spines[location].set_linewidth(border_width)
+
+    for i, curve in enumerate(curves):
+        ax_heatmap.plot(4 - curves[curve], curve_x, color=colors[i], linewidth=lwidth)
+
+    ax_heatmap.plot(
+        4 - (np.sqrt(14 - 0.9 * (curve_x - 2) ** 2) - 0.09),
+        curve_x,
+        color="black",
+        linewidth=6,
+    )
+
+    if strip_labels:
+        ax_heatmap.set_xlabel("")
+        ax_heatmap.set_ylabel("")
+        ax_heatmap.set_title("")
+        ax_heatmap.tick_params(
+            labelbottom=False,
+            labelleft=False,
+            labelright=False,
+            labeltop=False,
+        )
+    else:
+        ax_heatmap.set_xlabel("X (mm)")
+        ax_heatmap.set_ylabel("Y (mm)")
+        ax_heatmap.set_title("Predicted Skewness Angle Alpha")
+
+    if add_colorbar:
+        cax = inset_axes(
+            ax_heatmap,
+            width="5%",
+            height="100%",
+            loc="lower left",
+            bbox_to_anchor=(1.02, 0.0, 1, 1),
+            bbox_transform=ax_heatmap.transAxes,
+            borderpad=0,
+        )
+        cbar = ax_heatmap.figure.colorbar(im, cax=cax)
+        cbar.outline.set_linewidth(border_width)
+        cbar.ax.tick_params(width=border_width, length=6)
+        if strip_labels:
+            cbar.set_label("")
+            cbar.ax.tick_params(
+                labelleft=False,
+                labelright=False,
+                labelbottom=False,
+                labeltop=False,
+            )
+        else:
+            cbar.set_label("Alpha (Degrees)", fontsize=labeflsize)
+
+    return im
+
+
+def plot_riv_code_line(ax_line):
+    _Z, _x, _y, curve_x, _curves, scans = _build_riv_code_data()
+
+    border_width = 3
+    colors = ["c", "m", "y", "g"]
+    g_range = 2.5
+    lwidth = 4
+
+    for i, scan in enumerate(scans):
+        ax_line.plot(curve_x, scans[scan], color=colors[i], linewidth=lwidth)
+
+    ax_line.set(xlim=[0, 4], ylim=[-g_range, g_range])
+    ax_line.set_xticks([0, 1, 2, 3, 4])
+    ax_line.set_xlabel("Distance along curve (mm)")
+    ax_line.set_ylabel("Skewness Angle (Degrees)")
+    ax_line.set_title("Line Scan Profile")
+    ax_line.grid(True, alpha=0.3)
+    for location in ["top", "bottom", "left", "right"]:
+        ax_line.spines[location].set_linewidth(border_width)
+    ax_line.tick_params(width=border_width, length=6)
+
+
 def main():
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13.5, 6))
-    plot_riv_code(ax1, ax2, add_colorbar=True)
-    plt.tight_layout()
+    fig_heatmap, ax_heatmap = plt.subplots(figsize=(8, 8))
+    plot_riv_code_heatmap(ax_heatmap, add_colorbar=True, strip_labels=True)
+    # fig_heatmap.tight_layout()
+    fig_heatmap.savefig("riv_code_colormap.png", dpi=300)
+
+    fig_line, ax_line = plt.subplots(figsize=(6.75, 6))
+    plot_riv_code_line(ax_line)
+    fig_line.tight_layout()
     plt.show()
 
 
