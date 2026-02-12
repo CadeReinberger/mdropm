@@ -7,7 +7,7 @@ def solve_full(start_drop, prob_univ):
     out_t, out_x = solve_problem(start_drop, prob_univ)
 
     # Now, we pickle the setup
-    pickle_setup(start_drop, pu, out_file = sps.OUTPUT_DIR + 'setup.pkl')
+    pickle_setup(start_drop, prob_univ, out_file = sps.OUTPUT_DIR + 'setup.pkl')
 
     # Next, we pickle the problem
     pickle_output(out_t, out_x, sps.OUTPUT_DIR + 'results.pkl')
