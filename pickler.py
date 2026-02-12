@@ -20,7 +20,7 @@ def pickle_speed(D, out_path):
 Alright, let's pickle everything that we have. 
 Try and take all of the starting data that we're gonna need. 
 '''
-def pickle_full(drop, pu, out_file = 'out/setup.pkl'):
+def pickle_setup(drop, pu, out_file = 'out/setup.pkl'):
     # First, let's pickle the starting heightscape
     hs_dict = pu.htscp.to_pickle_dict()
 

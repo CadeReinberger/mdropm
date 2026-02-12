@@ -1,10 +1,10 @@
 from time_integrator import solve_problem
-from pickler import pickle_ouput, pickle_setup 
+from pickler import pickle_output, pickle_setup 
 
 def solve_full(start_drop, prob_univ):
     
     # First, Let's solve the problem
-    out_t, out_x = solve_problem(out_t, out_x)
+    out_t, out_x = solve_problem(start_drop, prob_univ)
 
     # Now, we pickle the setup
     pickle_setup(start_drop, pu, out_file = sps.OUTPUT_DIR + 'setup.pkl')

@@ -6,7 +6,7 @@ from physical_params import physical_params
 from solver_params import solver_params
 from problem_universe import problem_universe
 
-from run import run_full
+from run import solve_full
 
 def main():
     
@@ -29,7 +29,7 @@ def main():
     sd = droplet.constructors.make_circular_flat_drop(25, 3, hs)
 
     # Now we solve the full problem
-    run_full(pu, sd)
+    solve_full(sd, pu)
 
 if __name__ == '__main__':
     main()
