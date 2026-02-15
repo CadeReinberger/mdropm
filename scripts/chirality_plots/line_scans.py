@@ -4,7 +4,7 @@ from scipy.interpolate import CubicSpline, LinearNDInterpolator
 import pickle
 from matplotlib import pyplot as plt
 
-current_area_loc = '../../archived/run_25_half/out/results.pkl'
+current_area_loc = 'archived/run_25_half/out/results.pkl'
 with open(current_area_loc, 'rb') as in_file:
     res_dict = pickle.load(in_file)
 

@@ -1,0 +1,294 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
+from scipy.ndimage import map_coordinates
+import pickle as pkl
+
+
+def _build_riv_code_data():
+    Z = None
+    with open("data.pkl", "rb") as file:
+        Z = pkl.load(file)
+        Z = np.flipud(Z)
+
+    x = np.linspace(0, 4, Z.shape[1])
+    y = np.linspace(0, 4, Z.shape[0])
+
+    control_points = (
+        np.array(
+            [
+                [0.0, 2.9],
+                [2.0, 3.5],
+                [4.0, 2.9],
+            ]
+        )
+        - np.array([0, 0.4])
+    )
+
+    t = np.linspace(0, 1, len(control_points))
+    t_fine = np.linspace(0, 1, 500)
+
+    fx = interp1d(t, control_points[:, 0], kind="quadratic")
+    fy = interp1d(t, control_points[:, 1], kind="quadratic")
+
+    curve_x = fx(t_fine)
+    curve_y = fy(t_fine)
+
+    def create_scans_from_path(ycurve):
+        x_idx = np.interp(curve_x, x, np.arange(len(x)))
+        y_idx = np.interp(ycurve, y, np.arange(len(y)))
+        coords = np.array([y_idx, x_idx])
+        line_scan = map_coordinates(Z, coords, order=1)
+        return line_scan
+
+    curves = {}
+    scans = {}
+    for i in range(4):
+        curves[f"y{i}"] = curve_y - i * 0.4
+        scans[f"scan{i}"] = create_scans_from_path(curves[f"y{i}"])
+
+    return Z, x, y, curve_x, curves, scans
+
+
+def _build_riv_og_data():
+    Z = np.loadtxt("Tom_Science_symmetric_linear_transposed.csv", delimiter=",")
+    x = np.linspace(0, 4, Z.shape[1])
+    y = np.linspace(0, 4, Z.shape[0])
+
+    control_points = np.array(
+        [
+            [0.0, 3.4],
+            [2.0, 3.90],
+            [4.0, 2.9],
+        ]
+    ) - np.array([0, 0.1])
+
+    t = np.linspace(0, 1, len(control_points))
+    t_fine = np.linspace(0, 1, 500)
+
+    fx = interp1d(t, control_points[:, 0], kind="quadratic")
+    fy = interp1d(t, control_points[:, 1], kind="quadratic")
+
+    curve_x = fx(t_fine)
+    curve_y = fy(t_fine)
+
+    def create_scans_from_path(ycurve):
+        x_idx = np.interp(curve_x, x, np.arange(len(x)))
+        y_idx = np.interp(ycurve, y, np.arange(len(y)))
+        coords = np.array([y_idx, x_idx])
+        line_scan = map_coordinates(Z, coords, order=1)
+        return line_scan
+
+    curves = {}
+    scans = {}
+    for i in range(4):
+        curves[f"y{i}"] = curve_y - i * 0.5
+        scans[f"scan{i}"] = create_scans_from_path(curves[f"y{i}"])
+
+    return Z, x, y, curve_x, curves, scans
+
+
+def rescale_x_about_zero(xe, scane):
+    """
+    Given:
+        xe     : 1D array-like, x-coordinates (assumed ordered)
+        scane  : 1D array-like, experimental scan values (nearly monotone)
+
+    Returns:
+        new_xe : 1D numpy array, rescaled so that:
+                 x < x_zero  -> [0, 2]
+                 x > x_zero  -> [2, 4]
+    """
+    xe = np.asarray(xe, dtype=float)
+    scane = np.asarray(scane, dtype=float)
+    
+    print(xe)
+    print(scane)
+
+    if xe.ndim != 1 or scane.ndim != 1:
+        raise ValueError("xe and scane must be 1D arrays")
+    if xe.size != scane.size:
+        raise ValueError("xe and scane must have the same length")
+    if xe.size < 2:
+        raise ValueError("Need at least two points")
+
+    # ---- find candidate zero crossings ----
+    sgn = np.sign(scane)
+    sgn[sgn == 0] = np.nan  # avoid fake crossings at exact zeros
+    crossings = np.where(np.diff(np.sign(scane)) != 0)[0]
+
+    print(f'lc: {len(crossings)}')
+
+    if len(crossings) == 0:
+        raise RuntimeError("No sign change found; cannot determine zero crossing")
+
+    # ---- choose the strongest crossing (largest local slope) ----
+    slopes = []
+    for i in crossings:
+        dx = xe[i+1] - xe[i]
+        dy = scane[i+1] - scane[i]
+        slopes.append(abs(dy / dx))
+
+    i0 = crossings[np.argmax(slopes)]
+
+    # ---- linear interpolation for zero ----
+    x0, x1 = xe[i0], xe[i0 + 1]
+    y0, y1 = scane[i0], scane[i0 + 1]
+
+    if y1 == y0:
+        x_zero = 0.5 * (x0 + x1)
+    else:
+        x_zero = x0 - y0 * (x1 - x0) / (y1 - y0)
+
+    print(f'xz: {x_zero}')
+    print(f'diff: {(y0, y1)}')
+    # ---- rescale x ----
+    x_min = xe.min()
+    x_max = xe.max()
+
+    if not (x_min < x_zero < x_max):
+        raise RuntimeError("Estimated zero lies outside xe range")
+
+    new_xe = np.empty_like(xe)
+
+    left_mask = xe <= x_zero
+    right_mask = xe >= x_zero
+
+    # left: [x_min, x_zero] -> [0, 2]
+    new_xe[left_mask] = 2.0 * (xe[left_mask] - x_min) / (x_zero - x_min)
+
+    # right: [x_zero, x_max] -> [2, 4]
+    new_xe[right_mask] = 2.0 + 2.0 * (xe[right_mask] - x_zero) / (x_max - x_zero)
+
+    return new_xe
+
+
+def plot_line_scans_dual_axis(t_scans: dict, e_scans: dict):
+    """
+    t_scans: dict[key -> 1D list/array of length nt]  (predicted alpha in degrees)
+    e_scans: dict[key -> 1D list/array of length ne]  (experimental g-factor)
+
+    Each dict entry is plotted as one curve. x is autogenerated separately for t and e:
+      x_t = linspace(-2, 2, nt), x_e = linspace(-2, 2, ne)
+
+    Experimental curves are affinely scaled so they visually overlap predicted curves
+    as much as possible, while the right y-axis shows the true g-factor scale.
+    """
+    # ---- hardcoded labels/title ----
+    t_ylabel = "Predicted Alpha in Degrees"
+    e_ylabel = "Experimental g-factor"
+    xlabel = "x (mm)"
+    title = "Line Scans Results"
+
+    # ---- pull curves out of dicts (keep insertion order) ----
+    t_keys = list(t_scans.keys())
+    e_keys = list(e_scans.keys())
+
+    if len(t_keys) == 0:
+        raise ValueError("t_scans is empty.")
+    if len(e_keys) == 0:
+        raise ValueError("e_scans is empty.")
+
+    t_curves = [np.asarray(t_scans[k], dtype=float) for k in t_keys]
+    e_curves = [np.asarray(e_scans[k], dtype=float) for k in e_keys]
+
+    # basic shape checks
+    if any(c.ndim != 1 for c in t_curves):
+        raise ValueError("Each t_scans entry must be a 1D list/array.")
+    if any(c.ndim != 1 for c in e_curves):
+        raise ValueError("Each e_scans entry must be a 1D list/array.")
+
+    # allow different nt per key, but require at least 2 points for plotting
+    if any(len(c) < 2 for c in t_curves):
+        raise ValueError("Each t_scans curve must have length >= 2.")
+    if any(len(c) < 2 for c in e_curves):
+        raise ValueError("Each e_scans curve must have length >= 2.")
+
+    # x-grids per curve (can be different lengths)
+    x_t = [np.linspace(-2.0, 2.0, num=len(c)) for c in t_curves]
+    x_e = [np.linspace(-2.0, 2.0, num=len(c)) for c in e_curves]
+
+    # ---- robust global min/max across ALL points (to define scaling) ----
+    def robust_minmax(all_vals, qlo=1.0, qhi=99.0):
+        vals = np.concatenate([v[np.isfinite(v)] for v in all_vals if v.size > 0])
+        if vals.size == 0:
+            return 0.0, 1.0
+        lo = np.percentile(vals, qlo)
+        hi = np.percentile(vals, qhi)
+        if not np.isfinite(lo) or not np.isfinite(hi) or hi <= lo:
+            lo = float(np.min(vals))
+            hi = float(np.max(vals))
+        if hi <= lo:
+            hi = lo + 1.0
+        return float(lo), float(hi)
+
+    t_lo, t_hi = robust_minmax(t_curves)
+    e_lo, e_hi = robust_minmax(e_curves)
+
+    # Affine map e -> e_mapped to match t-range visually
+    a = (t_hi - t_lo) / (e_hi - e_lo) if (e_hi > e_lo) else 1.0
+    b = t_lo - a * e_lo
+
+    # ---- styling ----
+    plt.rcParams.update({
+        "font.size": 16,
+        "axes.labelsize": 16,
+        "axes.titlesize": 24,
+        "xtick.labelsize": 16,
+        "ytick.labelsize": 16,
+        "legend.fontsize": 16,
+    })
+
+    fig, ax_t = plt.subplots(figsize=(8, 8), constrained_layout=True)
+    ax_e = ax_t.twinx()
+    
+    cols = ('c', 'm', 'y', 'g')
+
+    # ---- plot predicted (solid) ----
+    for k, xt, yt in zip(t_keys, x_t, t_curves):
+        ax_t.plot(xt, yt, lw=2.0, alpha=0.9, color=cols[int(k[-1])])
+
+    # ---- plot experimental (dashed), scaled for overlap ----
+    for k, xe, ye in zip(e_keys, x_e, e_curves):
+        ax_t.plot(xe, a*ye+b, lw=1.8, ls='--', alpha=.9, color=cols[int(k[-1])])
+        # xep = rescale_x_about_zero(xe, a*ye+b) - 2
+        #ax_t.plot(xep, a * ye + b, lw=1.8, ls="--", alpha=0.9, color=cols[int(k[-1])])
+
+    ax_t.set_title("")
+    ax_t.set_xlabel("")
+    ax_t.set_ylabel("")
+    ax_e.set_ylabel("")
+
+    # Right axis is the inverse mapping of left axis so ticks line up
+    yL0, yL1 = ax_t.get_ylim()
+    ax_e.set_ylim((yL0 - b) / a, (yL1 - b) / a)
+
+    left_ticks = ax_t.get_yticks()
+    ax_e.set_yticks((left_ticks - b) / a)
+
+    ax_t.grid(True, which="major", alpha=0.25)
+    ax_t.set_xlim(-2.0, 2.0)
+    ax_t.tick_params(
+        labelbottom=False,
+        labelleft=False,
+        labelright=False,
+        labeltop=False,
+    )
+    ax_e.tick_params(
+        labelleft=False,
+        labelright=False,
+        labelbottom=False,
+        labeltop=False,
+    )
+
+    # legend (can get big; but it’s accurate)
+    # ax_t.legend(loc="best", frameon=True, ncol=1)
+
+    fig.savefig("combined_linescan_plotter.png", dpi=300)
+    plt.show()
+
+
+# --- usage ---
+t_scans = _build_riv_code_data()[-1]
+e_scans = _build_riv_og_data()[-1]
+plot_line_scans_dual_axis(t_scans, e_scans)

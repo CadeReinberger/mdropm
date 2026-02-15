@@ -13,6 +13,10 @@ class heightscape:
         self.hyy = hyy
         self.H = H
 
+    def to_pickle_dict(self):
+        res = {'ufl_str' : self.ufl_str}
+        return res
+
 class constructors:
         
     def from_poly(poly_str):
