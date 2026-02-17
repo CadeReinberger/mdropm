@@ -11,7 +11,8 @@ from run import solve_full
 def main():
     
     # Make the heightscape
-    hs = heightscape.constructors.rect_interp_htscape((10, 10), (.1, .2, .2, .1))
+    # Back canting here we go. 
+    hs = heightscape.constructors.rect_interp_htscape((10, 10), (.2, .1, .1, .2))
     
     # Make the tapescape
     ts = tapescape.constructors.make_rectangle_top_open(-5, -5, 5, 5)
