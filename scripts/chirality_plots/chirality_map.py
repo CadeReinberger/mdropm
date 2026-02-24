@@ -7,7 +7,7 @@ current_area_loc = 'archived/run_25_half/out/results.pkl'
 with open(current_area_loc, 'rb') as in_file:
     res_dict = pickle.load(in_file)
 
-K_ALPHA = .2 # Minutes
+K_ALPHA = .2 * .09 # Minutes
 
 start_ind = 2
 UE = 1
@@ -461,7 +461,7 @@ def make_alpha_plot(ts, xs, ys, k_alpha=K_ALPHA):
         plt.pcolormesh(X, Y, Z, cmap='bwr', vmin=-vlim, vmax=vlim)
         plt.plot(outline_x, outline_y, 'k-', linewidth=3)
         plt.colorbar()
-        plt.title(r'Predicted Skewness Angle ($^\circ$)')
+        plt.title('Predicted G Factor')
         plt.xticks([])
         plt.yticks([])
         plt.gcf().set_dpi(1000)
