@@ -12,7 +12,8 @@ from ffmpy import FFmpeg
 from tqdm import tqdm
 from time import sleep as waitasecond
 
-current_area_loc = '../out/results.pkl'
+#current_area_loc = '../out/results.pkl'
+current_area_loc = '../archived/run_25_half/out/results.pkl'
 with open(current_area_loc, 'rb') as in_file:
     res_dict = pickle.load(in_file)
 

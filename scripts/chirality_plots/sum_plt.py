@@ -128,17 +128,22 @@ import matplotlib.pyplot as plt
 def make_multi_plot(ts, xs, ys, thetas, n_t=10, n_s=200):
     # Interpolate space & time
     pt, px, py, ptheta = space_and_time_interp(ts, xs, ys, thetas, n_t=n_t, n_s=n_s)
+    # Keep interpolation unchanged, but only plot/save up to the penultimate time.
+    # pt_plot = pt[::-1]
+    # px_plot = px[::-1]
+    # py_plot = py[::-1]
+    pt_plot, px_plot, py_plot = pt, px, py
 
     # Global bounds (so every small plot has identical axes)
     bds = get_bounds(px, py, ptheta)
 
     # Create a horizontal row of small axes
-    n = len(pt)
+    n = len(pt_plot)
     fig_width = max(3.0 * n, 4.0)  # scale width with number of panels
     fig, axes = plt.subplots(1, n, figsize=(fig_width, 3.2), squeeze=False)
     axes = axes[0]  # flatten
 
-    for ax, x, y in zip(axes, px, py):
+    for ax, x, y in zip(axes, px_plot, py_plot):
         ax.set_aspect('equal')
         ax.set_xlim(bds[0])
         ax.set_ylim(bds[1])
