@@ -85,11 +85,10 @@ def solve_pressure_field(dr_x, dr_y, ps, hs, pps, sps, viz=False):
 
     ## Now we add the dirichlet BC
     
-    # Make a function to interpolate to the boundary 
+    # Make a function to interpolate to the boundary
     bdry_funct = make_polygon_projector(dr_x, dr_y, ps)
     def _bdry_interp(x):
-        vals = [bdry_funct(x[0][ind], x[1][ind]) for ind in range(len(x[0]))]
-        return np.asarray(vals, dtype=ScalarType)
+        return bdry_funct(x[0], x[1]).astype(ScalarType)
 
     # Make a Function Object and interpolate to it
     u_D = Function(V)
