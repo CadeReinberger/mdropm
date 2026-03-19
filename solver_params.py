@@ -37,10 +37,10 @@ class solver_params:
     SUBDIV_RADAU = True
     RADAU_EVAL_LINSPACE_N = 10 
     RADAU_OUT_EVERY = 1
-    T_FIN = 9.9
+    T_FIN = 11.9
     VERBOSE = True
 
-    END_AREA_RATIO = .45 # Make this 0 to not use
+    END_AREA_RATIO = .5 # Make this 0 to not use
     CHECK_SELF_INTERSECTION_DT = .5 # Can be None
     #-------------------------------------------#
     

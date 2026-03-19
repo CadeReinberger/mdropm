@@ -15,6 +15,7 @@ from pathlib import Path
 
 import imageio.v2 as imageio
 import matplotlib.pyplot as plt
+import matplotlib.tri as mtri
 import numpy as np
 from dolfinx.fem import Function, functionspace
 from dolfinx.plot import vtk_mesh
@@ -43,6 +44,10 @@ OUTPUT_MP4 = Path(__file__).resolve().parent / "pressure_field_animation.mp4"
 OUTPUT_GIF = Path(__file__).resolve().parent / "pressure_field_animation.gif"
 AXIS_PADDING_FRAC = 0.05
 CMAP = "viridis"
+USE_STREAMLINES = True
+STREAM_DENSITY = 0.55
+SLOPE_FIELD_STRIDE = 6
+VECTOR_GRID_SIZE = 64
 
 
 def load_pickle(path: Path):
@@ -172,6 +177,42 @@ def mesh_triangles_and_values(uh, mesh):
     return verts, triangles, values
 
 
+def sample_gradient_field(
+    verts: np.ndarray,
+    triangles: np.ndarray,
+    values: np.ndarray,
+    xlim,
+    ylim,
+    grid_size: int,
+):
+    triang = mtri.Triangulation(verts[:, 0], verts[:, 1], triangles)
+    interpolator = mtri.LinearTriInterpolator(triang, values)
+
+    x_grid = np.linspace(float(xlim[0]), float(xlim[1]), grid_size)
+    y_grid = np.linspace(float(ylim[0]), float(ylim[1]), grid_size)
+    grid_x, grid_y = np.meshgrid(x_grid, y_grid)
+
+    p_grid = np.ma.asarray(interpolator(grid_x, grid_y))
+    valid_mask = ~np.ma.getmaskarray(p_grid)
+
+    p_data = np.asarray(np.ma.filled(p_grid, np.nan), dtype=float)
+    p_fill = np.where(valid_mask, p_data, 0.0)
+
+    dp_dy, dp_dx = np.gradient(p_fill, y_grid, x_grid)
+    dp_dx = np.where(valid_mask, dp_dx, np.nan)
+    dp_dy = np.where(valid_mask, dp_dy, np.nan)
+    grad_mag = np.sqrt(dp_dx**2 + dp_dy**2)
+
+    return {
+        "x_grid": x_grid,
+        "y_grid": y_grid,
+        "grad_x": dp_dx,
+        "grad_y": dp_dy,
+        "grad_mag": grad_mag,
+        "valid_mask": valid_mask,
+    }
+
+
 def frame_bounds(xs: np.ndarray, ys: np.ndarray, pad_frac: float):
     xmin, xmax = float(np.min(xs)), float(np.max(xs))
     ymin, ymax = float(np.min(ys)), float(np.max(ys))
@@ -190,22 +231,62 @@ def render_animation(frames, xlim, ylim, vmin, vmax, output_gif: Path, output_mp
     images = []
     for ind, fr in enumerate(frames):
         fig, ax = plt.subplots(figsize=(7.2, 6.0), dpi=150)
-        tri = ax.tripcolor(
-            fr["verts"][:, 0],
-            fr["verts"][:, 1],
-            fr["triangles"],
-            fr["values"],
-            shading="gouraud",
+        grad_mag = np.ma.masked_invalid(fr["grad_mag"])
+        color = ax.pcolormesh(
+            fr["x_grid"],
+            fr["y_grid"],
+            grad_mag,
+            shading="auto",
             cmap=CMAP,
             vmin=vmin,
             vmax=vmax,
         )
+
+        if USE_STREAMLINES:
+            grad_x = np.ma.masked_invalid(fr["grad_x"])
+            grad_y = np.ma.masked_invalid(fr["grad_y"])
+            ax.streamplot(
+                fr["x_grid"],
+                fr["y_grid"],
+                grad_x,
+                grad_y,
+                color=(0.08, 0.08, 0.08, 0.55),
+                density=STREAM_DENSITY,
+                linewidth=0.7,
+                arrowsize=0.8,
+                minlength=0.08,
+            )
+        else:
+            sl = slice(None, None, SLOPE_FIELD_STRIDE)
+            qx = fr["x_grid"][sl]
+            qy = fr["y_grid"][sl]
+            qgx = fr["grad_x"][sl, sl]
+            qgy = fr["grad_y"][sl, sl]
+            qmask = np.isfinite(qgx) & np.isfinite(qgy)
+            qnorm = np.hypot(qgx, qgy)
+            qnorm = np.where(qmask & (qnorm > 1e-14), qnorm, 1.0)
+            uqx = np.where(qmask, qgx / qnorm, np.nan)
+            uqy = np.where(qmask, qgy / qnorm, np.nan)
+            qxx, qyy = np.meshgrid(qx, qy)
+            ax.quiver(
+                qxx[qmask],
+                qyy[qmask],
+                uqx[qmask],
+                uqy[qmask],
+                angles="xy",
+                scale_units="xy",
+                scale=3.0,
+                width=0.0024,
+                color=(0.08, 0.08, 0.08, 0.55),
+                pivot="mid",
+            )
+
         ax.plot(fr["x_outline"], fr["y_outline"], color="black", linewidth=1.8)
         ax.set_xlim(*xlim)
         ax.set_ylim(*ylim)
         ax.set_aspect("equal", adjustable="box")
-        ax.set_title(f"Pressure Field, t={fr['t']:.3f}")
-        fig.colorbar(tri, ax=ax, label="pressure")
+        ax.set_title(f"Pressure Gradient Magnitude, t={fr['t']:.3f}")
+        fig.colorbar(color, ax=ax, label=r"$|\nabla p|$")
         fig.tight_layout()
 
         fig.canvas.draw()
@@ -270,17 +351,21 @@ def main():
         x_outline = np.r_[dr_x, dr_x[0]]
         y_outline = np.r_[dr_y, dr_y[0]]
 
+        grad_field = sample_gradient_field(verts, triangles, values, xlim, ylim, VECTOR_GRID_SIZE)
+
         frames.append(
             {
                 "t": float(frame_t[i]),
-                "verts": verts,
-                "triangles": triangles,
-                "values": values,
+                "x_grid": grad_field["x_grid"],
+                "y_grid": grad_field["y_grid"],
+                "grad_x": grad_field["grad_x"],
+                "grad_y": grad_field["grad_y"],
+                "grad_mag": grad_field["grad_mag"],
                 "x_outline": x_outline,
                 "y_outline": y_outline,
             }
         )
-        all_vals.append(values)
+        all_vals.append(grad_field["grad_mag"][np.isfinite(grad_field["grad_mag"])])
 
         print(f"Solved pressure field {i + 1}/{NUM_FRAMES}")
 
