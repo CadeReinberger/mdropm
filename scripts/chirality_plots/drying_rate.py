@@ -44,18 +44,24 @@ def plot_drying_rate(ax):
     del(first_dt[3])
     del(first_gfs[3])
 
-    ax.scatter(first_dt, first_gfs, color="tab:blue", label="Series 1")
-    ax.scatter(rest_dt, rest_gfs, color="tab:orange", label="Series 2")
+    all_dt = first_dt + rest_dt
+    all_gfs = first_gfs + rest_gfs
+    ax.scatter(all_dt, all_gfs, color="tab:blue", label="Experimental", s=36 * 1.67)
     ax.plot(
         (35, 35),
-        (min(gfs), max(gfs)),
+        (-0.03, 0.07),
         "k--",
         label="Predicted Regime Change",
     )
 
-    ax.set_title("Drying Rate Data")
-    ax.set_xlabel("Drying time (min)", fontsize=24)
-    ax.set_ylabel("G-factor Slope", fontsize=24)
+    ax.set_ylim(-0.03, 0.07)
+    xlim = ax.get_xlim()
+    ax.axvspan(xlim[0], 35, color="blue", alpha=0.05)
+    ax.axvspan(35, xlim[1], color="red", alpha=0.05)
+    ax.set_xlim(xlim)
+    ax.set_xlabel("")
+    ax.set_ylabel("")
+    ax.tick_params(labelbottom=False, labelleft=False)
     ax.legend(fontsize=18)
     ax.grid(alpha=0.25)
 

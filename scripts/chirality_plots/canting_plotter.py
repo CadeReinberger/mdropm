@@ -149,7 +149,7 @@ def plot_canting(ax, base_dir=None, include_experimental=True):
 
     # --- Plot ---
     ax.plot(ht_ratio_samp, int_samp, "k--", alpha=0.85)
-    ax.scatter(ht_ratios_sorted, k_gs_sorted, s=55, alpha=0.85, label="Simulated")
+    ax.scatter(ht_ratios_sorted, k_gs_sorted, s=77, alpha=0.85, label="Simulated")
 
     print(f'kgs: {k_gs_sorted}')
 
@@ -161,7 +161,7 @@ def plot_canting(ax, base_dir=None, include_experimental=True):
             "axes.titlesize": 32,
             "xtick.labelsize": 24,
             "ytick.labelsize": 24,
-            "legend.fontsize": 24,
+            "legend.fontsize": 20,
         }
     )
 
@@ -169,16 +169,23 @@ def plot_canting(ax, base_dir=None, include_experimental=True):
     # print(f'kg_riv: {kg_riv}')
     # plt.plot(dh_riv, kg_riv, 'm--', label='Experimental', alpha=.85)
     if include_experimental:
-        ax.scatter(dh_riv, kg_riv, color="m", s=55, alpha=0.85, label="Experimental")
+        ax.scatter(dh_riv, kg_riv, color="m", s=77, alpha=0.85, label="Experimental")
 
-    ax.set_xlabel("Relative Height Change", fontsize=24)
-    ax.legend()
-    ax.set_ylabel("g-factor slope", fontsize=24)
-    ax.set_title("Canting Chirality Series")
+    ax.set_xlabel("")
+    ax.set_ylabel("")
+    ax.legend(loc="upper left")
+    # ax.set_title("Canting Chirality Series")
 
-    # plt.xlim(-.05, 1.05)
-    # plt.ylim(0, 1.2)
-    
+    ax.tick_params(axis="x", labelbottom=False)
+    ax.tick_params(axis="y", labelleft=False)
+
+    plt.xlim(-.05, 1.2)
+    plt.ylim(.2, 1.3)
+
+    ax_right = ax.twinx()
+    ax_right.set_ylim(.2, 1.3)
+    ax_right.tick_params(axis="y", labelright=False)
+
     ax.grid(True, alpha=0.25)
 
     return len(ht_ratios)

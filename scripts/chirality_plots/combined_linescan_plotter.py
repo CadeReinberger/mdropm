@@ -281,8 +281,13 @@ def plot_line_scans_dual_axis(t_scans: dict, e_scans: dict):
         labeltop=False,
     )
 
-    # legend (can get big; but it’s accurate)
-    # ax_t.legend(loc="best", frameon=True, ncol=1)
+    # legend
+    from matplotlib.lines import Line2D
+    legend_handles = [
+        Line2D([0], [0], color='k', lw=2.0, linestyle='--', label='Experimental'),
+        Line2D([0], [0], color='k', lw=2.0, linestyle='-', label='Theory'),
+    ]
+    ax_t.legend(handles=legend_handles, loc='upper right', frameon=True, fontsize=24)
 
     fig.savefig("combined_linescan_plotter.png", dpi=300)
     plt.show()

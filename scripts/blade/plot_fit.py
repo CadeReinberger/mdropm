@@ -10,7 +10,7 @@ std_arr = np.array(std, dtype=float)
 angles_rad = np.deg2rad(angles_arr)
 
 def model(angle_rad, A):
-    return A * np.sin(2 * angle_rad)
+    return A * np.sin(angle_rad) # was 2x
 
 popt, pcov = curve_fit(model, angles_rad, mean_arr)
 A_fit = popt[0]
