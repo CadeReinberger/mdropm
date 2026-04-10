@@ -1,4 +1,5 @@
 from geo_util import liquid_lc, make_polygon_projector
+import atexit
 import numpy as np
 import uuid
 import gmsh
@@ -17,12 +18,23 @@ from petsc4py.PETSc import ScalarType, Options
 import pyvista
 
 
+def _finalize_gmsh():
+    if gmsh.isInitialized():
+        gmsh.finalize()
+
+
+atexit.register(_finalize_gmsh)
+
+
 def make_gmesh_mesh(dr_x, dr_y, sps):
     # Get the mesh fineness dynamically we're gona use
     lc = liquid_lc(dr_x, dr_y, sps)
 
-    # Initialize a new gmesh
-    gmsh.initialize()
+    # Reuse one gmsh session across frames; repeated initialize/finalize cycles
+    # are a common source of instability in the gmsh/MPI/PETSc stack.
+    if not gmsh.isInitialized():
+        gmsh.initialize()
+    gmsh.clear()
     model_id = uuid.uuid4().hex
     gmsh.model.add(model_id)
     factory = gmsh.model.geo
@@ -50,9 +62,6 @@ def make_gmesh_mesh(dr_x, dr_y, sps):
 
     # Write the mesh
     gmsh.write(sps.LIQUID_PHASE_MESH_FILE)
-
-    # Finalize and return
-    gmsh.finalize()
     return
 
 
@@ -76,11 +85,10 @@ def solve_pressure_field(dr_x, dr_y, ps, hs, pps, sps, viz=False):
 
     ## Now we add the dirichlet BC
     
-    # Make a function to interpolate to the boundary 
+    # Make a function to interpolate to the boundary
     bdry_funct = make_polygon_projector(dr_x, dr_y, ps)
     def _bdry_interp(x):
-        vals = [bdry_funct(x[0][ind], x[1][ind]) for ind in range(len(x[0]))]
-        return np.asarray(vals, dtype=ScalarType)
+        return bdry_funct(x[0], x[1]).astype(ScalarType)
 
     # Make a Function Object and interpolate to it
     u_D = Function(V)

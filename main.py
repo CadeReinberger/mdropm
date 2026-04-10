@@ -11,6 +11,7 @@ from run import solve_full
 def main():
     
     # Make the heightscape
+    # Back canting here we go. 
     hs = heightscape.constructors.rect_interp_htscape((10, 10), (.1, .2, .2, .1))
     
     # Make the tapescape
@@ -26,7 +27,7 @@ def main():
     pu = problem_universe(hs, ts, sps, pps)
 
     # Make the starting droplet
-    sd = droplet.constructors.make_circular_flat_drop(25, 3, hs)
+    sd = droplet.constructors.make_circular_flat_drop(40, 3, hs)
 
     # Now we solve the full problem
     solve_full(sd, pu)

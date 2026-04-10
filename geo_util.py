@@ -1,5 +1,5 @@
 import numpy as np
-from shapely.geometry import Point, LinearRing, LineString, Polygon
+from shapely.geometry import LineString, Polygon
 from itertools import combinations
 
 def compute_area_shoelace(x, y):
@@ -64,34 +64,55 @@ def liquid_lc(drop_x, drop_y, sps):
     return lc 
 
 def make_polygon_projector(x, y, u):
-    # Make the Linear Ring so Shapely knows wassup
-    coords = list(zip(x,y))
-    ring = LinearRing(coords)
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    u = np.asarray(u, dtype=float)
+    n = len(x)
 
-    # Make the segment lengths and cum arclength
-    x_circ = np.r_[x, x[0]]
-    y_circ = np.r_[y, y[0]]
-    seg_len = np.hypot(np.diff(x_circ), np.diff(y_circ))
-    cum_len = np.r_[0, np.cumsum(seg_len)]
+    # Segment start/end points (A[i] -> B[i] = A[(i+1)%n])
+    ax, ay = x, y
+    bx = np.roll(x, -1)
+    by = np.roll(y, -1)
+
+    # Segment direction vectors, squared lengths, and cumulative arc-length
+    sdx = bx - ax                            # shape (n,)
+    sdy = by - ay
+    seg_len_sq = sdx*sdx + sdy*sdy          # shape (n,)
+    seg_len    = np.sqrt(seg_len_sq)        # shape (n,)
+    cum_len    = np.r_[0.0, np.cumsum(seg_len)]  # shape (n+1,)
+
+    # u value at the end vertex of each segment, pre-indexed
+    u_next = u[(np.arange(n) + 1) % n]
 
     def query(px, py):
-        P = Point(px, py)
+        """Accept scalar or 1-D array of query points; return u values in same shape."""
+        px = np.asarray(px, dtype=float)
+        py = np.asarray(py, dtype=float)
+        scalar = px.ndim == 0
+        px = np.atleast_1d(px)
+        py = np.atleast_1d(py)
 
-        # Distance to closest point
-        s = ring.project(P)
+        # (N, n): vector from each segment start to each query point
+        ex = px[:, None] - ax[None, :]
+        ey = py[:, None] - ay[None, :]
 
-        # Find the segment that we want
-        i = int(np.searchsorted(cum_len, s, side='right')-1)
-        if i == len(x):
-            i = len(x) - 1
+        # Scalar projection onto segment direction, clamped to [0, 1]
+        t = (ex * sdx[None, :] + ey * sdy[None, :]) / seg_len_sq[None, :]
+        t = np.clip(t, 0.0, 1.0)                                # (N, n)
 
-        # Compute the linear interpolation
-        u_val = np.interp(s, (cum_len[i], cum_len[i+1]), (u[i], u[(i+1)%len(u)]))
-        
-        # Return the result
-        return u_val
+        # Squared distance to closest point on each segment
+        dist_sq = (px[:, None] - (ax[None, :] + t * sdx[None, :]))**2 \
+                + (py[:, None] - (ay[None, :] + t * sdy[None, :]))**2  # (N, n)
 
-    # Return the querying function
+        # Best segment and t for each query point
+        seg_idx = np.argmin(dist_sq, axis=1)            # (N,)
+        t_best  = t[np.arange(len(px)), seg_idx]        # (N,)
+
+        # Linear interpolation of u along the winning segment
+        u_vals = u[seg_idx] + t_best * (u_next[seg_idx] - u[seg_idx])  # (N,)
+
+        return u_vals[0] if scalar else u_vals
+
     return query
 
 

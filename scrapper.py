@@ -25,7 +25,6 @@ def diagnostic_plot(out_t, out_x):
 
 
 # Make the heightscape
-# hs = heightscape.constructors.rect_interp_htscape((10, 10), (.1, .2, .2, .1))
 hs = heightscape.constructors.rect_interp_htscape((10, 10), (.1, .2, .2, .1))
 
 # Make the tapescape
@@ -45,7 +44,6 @@ drop = droplet.constructors.make_circular_flat_drop(25, 3, hs)
 
 # Solve the time integration problem
 out_t, out_x = solve_problem(drop, pu)
-print('Well We Did Something!')
 
 # Plot the result to get a feel
 diagnostic_plot(out_t, out_x)

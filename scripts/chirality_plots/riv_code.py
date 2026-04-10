@@ -152,7 +152,7 @@ def plot_riv_code_heatmap(ax_heatmap, add_colorbar=True, strip_labels=False):
     border_width = 3
     labeflsize = 28
     colors = ["c", "m", "y", "g"]
-    g_range = 2.5
+    g_range = .15 #2.5
     lwidth = 4
 
     plt.rcParams.update(

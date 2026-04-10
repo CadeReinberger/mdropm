@@ -37,6 +37,11 @@ class constructors:
         h = np.array([hs.h(xv, yv) for (xv, yv) in zip(x, y)])
         dh_dn = np.array([np.cos(theta[ind])*hs.hx(x[ind], y[ind]) + np.sin(theta[ind])*hs.hy(x[ind], y[ind]) for ind in range(N)])
         psi = np.arctan(dh_dn)
+        if np.isclose(max(h), min(h)):
+            # Constant Height case must be treated separately
+            ca_theta = pps.theta_r
+            return droplet(N, 2*np.pi, theta, x, y, ca_theta)
+        # Otherwise we use the standard logic
         p_star_over_gamma = compute_p_star_over_gamma(hs, R, HL, pps) 
         ca_theta = -psi + np.arccos(-p_star_over_gamma * h)
         print(f'ca_theta: {ca_theta}')

@@ -8,7 +8,7 @@ current_area_loc = 'archived/run_25_half/out/results.pkl'
 with open(current_area_loc, 'rb') as in_file:
     res_dict = pickle.load(in_file)
 
-K_ALPHA = 2 / 10 # mm
+K_ALPHA = 1 # 2 / 10 # mm
 
 start_ind = 2
 UE = 1
@@ -91,11 +91,11 @@ def make_alpha_top_plot(ts, xs, ys, k_alpha=K_ALPHA, ALPHA_DIFF=45):
             z_plt = cs(x_plt)
         
             # Make the plot
-            plt.plot(100 * x_plt / R, z_plt, label=f'shift: {shft}')
+            plt.plot(100 * x_plt / R, 10 * z_plt, label=f'shift: {shft}')
         
         plt.title(r'Predicted Skewness Angle ($^\circ$)')
         plt.xlabel('x length (% radius)')
-        plt.ylabel('alpha (degrees)')
+        plt.ylabel('Curvature (1/cm)')
         plt.legend()
         plt.gcf().set_dpi(1000)
         plt.savefig(f'line_scans_theory.png', dpi=1000, bbox_inches='tight')
