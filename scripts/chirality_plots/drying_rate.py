@@ -46,7 +46,9 @@ def plot_drying_rate(ax):
 
     all_dt = first_dt + rest_dt
     all_gfs = first_gfs + rest_gfs
-    ax.scatter(all_dt, all_gfs, color="tab:blue", label="Experimental", s=36 * 1.67)
+    #ax.scatter(all_dt, all_gfs, color="tab:blue", label="Experimental", s=36 * 1.67)
+    ax.scatter(first_dt, first_gfs, color="purple", label="15 mg/mL", s=80)
+    ax.scatter(rest_dt, rest_gfs, color="green", label="25 mg/mL", s=80)
     ax.plot(
         (35, 35),
         (-0.03, 0.07),
@@ -54,6 +56,7 @@ def plot_drying_rate(ax):
         label="Predicted Regime Change",
     )
 
+    #ax.set_xscale("log")
     ax.set_ylim(-0.03, 0.07)
     xlim = ax.get_xlim()
     ax.axvspan(xlim[0], 35, color="blue", alpha=0.05)

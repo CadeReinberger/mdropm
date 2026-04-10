@@ -169,7 +169,7 @@ def plot_canting(ax, base_dir=None, include_experimental=True):
     # print(f'kg_riv: {kg_riv}')
     # plt.plot(dh_riv, kg_riv, 'm--', label='Experimental', alpha=.85)
     if include_experimental:
-        ax.scatter(dh_riv, kg_riv, color="m", s=77, alpha=0.85, label="Experimental")
+        ax.scatter(dh_riv, kg_riv, color="m", s=100, alpha=0.85, label="Experimental")
 
     ax.set_xlabel("")
     ax.set_ylabel("")
