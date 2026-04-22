@@ -1,4 +1,5 @@
 from matplotlib import pyplot as plt
+from matplotlib.lines import Line2D
 
 
 def plot_drying_rate(ax):
@@ -47,8 +48,8 @@ def plot_drying_rate(ax):
     all_dt = first_dt + rest_dt
     all_gfs = first_gfs + rest_gfs
     #ax.scatter(all_dt, all_gfs, color="tab:blue", label="Experimental", s=36 * 1.67)
-    ax.scatter(first_dt, first_gfs, color="purple", label="15 mg/mL", s=80)
-    ax.scatter(rest_dt, rest_gfs, color="green", label="25 mg/mL", s=80)
+    ax.scatter(first_dt, first_gfs, color="purple", s=80)
+    ax.scatter(rest_dt, rest_gfs, color="green", s=80)
     ax.plot(
         (35, 35),
         (-0.03, 0.07),
@@ -65,7 +66,9 @@ def plot_drying_rate(ax):
     ax.set_xlabel("")
     ax.set_ylabel("")
     ax.tick_params(labelbottom=False, labelleft=False)
-    ax.legend(fontsize=18)
+    experimental_handle = Line2D([0], [0], marker="o", color="w", markerfacecolor="black", markersize=9, label="Experimental")
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles=[experimental_handle] + handles, labels=["Experimental"] + labels, fontsize=18)
     ax.grid(alpha=0.25)
 
 
