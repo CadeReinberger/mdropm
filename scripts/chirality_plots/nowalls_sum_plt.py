@@ -12,22 +12,20 @@ from ffmpy import FFmpeg
 from tqdm import tqdm
 from time import sleep as waitasecond
 
-# current_area_loc = '../../archived/backwards_main/results.pkl'
-current_area_loc = '../../archived/first_run_flat/out/results.pkl'
-# current_area_loc = '../../out/results.pkl'
-with open(current_area_loc, 'rb') as in_file:
+with open('nowalls.pkl', 'rb') as in_file:
     res_dict = pickle.load(in_file)
 
 UE = 1
-end_prop = .95
-end_ind = int(end_prop * len(res_dict['out_t']))
+end_prop = .7
+end_ind = int(end_prop * len(res_dict['t']))
 
-all_ts = res_dict['out_t'][2:end_ind:UE]
-all_vecs = res_dict['out_x'][2:end_ind:UE]
-n = len(all_vecs[0]) // 3
-all_xs = [vec[:n] for vec in all_vecs]
-all_ys = [vec[n:2*n] for vec in all_vecs]
-all_thetas = [vec[2*n:3*n] for vec in all_vecs]
+all_ts = res_dict['t'][2:end_ind:UE]
+all_xs = res_dict['x'][2:end_ind:UE]
+all_ys = res_dict['y'][2:end_ind:UE]
+all_thetas = res_dict['theta'][2:end_ind:UE]
+
+x0, y0 = np.array(res_dict['x'][0]), np.array(res_dict['y'][0])
+initial_radius = np.mean(np.sqrt(x0**2 + y0**2))
 
 def get_bounds(xs, ys, thetas, extra_factor = .1):
     # Run the main guy to do main guy things
@@ -154,11 +152,11 @@ def make_multi_plot(ts, xs, ys, thetas, n_t=10, n_s=200):
         ax.plot(-y, x, 'k', linewidth=2)
 
         if i > 0:
-            circle = plt.Circle((0, 0), 3, fill=False, linestyle='--', edgecolor='gray', linewidth=1)
+            circle = plt.Circle((0, 0), initial_radius, fill=False, linestyle='--', edgecolor='gray', linewidth=1)
             ax.add_patch(circle)
 
     fig.tight_layout(w_pad=0.3)
-    plt.savefig('summary_plot.png')
+    plt.savefig('nowalls_sum.png')
 
 
 def main():

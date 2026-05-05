@@ -53,3 +53,18 @@ class constructors:
         # Make the collection of segments
         segs = [seg_t, seg_l, seg_b, seg_r]
         return EXTERNAL_BCS(segs)
+
+    def make_rectangle_empty(bl_x, bl_y, tr_x, tr_y):
+        # We do no checking this time. First take the points
+        bl = np.array([bl_x, bl_y])
+        br = np.array([tr_x, bl_y])
+        tr = np.array([tr_x, tr_y])
+        tl = np.array([bl_x, tr_y])
+        # Now make the segmanets
+        seg_t = EXTERNAL_BC_SEGMENT(tr, tl, EXTERNAL_BC_TYPES.HOMOGENEOUS_DIRICHLET)
+        seg_l = EXTERNAL_BC_SEGMENT(tl, bl, EXTERNAL_BC_TYPES.HOMOGENEOUS_DIRICHLET)
+        seg_b = EXTERNAL_BC_SEGMENT(bl, br, EXTERNAL_BC_TYPES.HOMOGENEOUS_DIRICHLET)
+        seg_r = EXTERNAL_BC_SEGMENT(br, tr, EXTERNAL_BC_TYPES.HOMOGENEOUS_DIRICHLET)
+        # Make the collection of segments
+        segs = [seg_t, seg_l, seg_b, seg_r]
+        return EXTERNAL_BCS(segs)
