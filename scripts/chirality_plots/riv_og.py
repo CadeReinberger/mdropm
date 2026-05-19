@@ -84,8 +84,8 @@ def _build_riv_og_data():
 
     curves = {}
     scans = {}
-    for i in range(4):
-        curves[f"y{i}"] = curve_y - i * 0.5
+    for i in range(3):
+        curves[f"y{i}"] = curve_y - i * 1.2
         scans[f"scan{i}"] = create_scans_from_path(curves[f"y{i}"])
 
     return Z, x, y, curve_x, curves, scans
@@ -137,8 +137,8 @@ def plot_riv_og(ax_heatmap, ax_line, add_colorbar=True):
     for i, scan in enumerate(scans):
         ax_line.plot(curve_x, scans[scan], color=colors[i], linewidth=lwidth)
 
-    ax_line.set(xlim=[0, 4], ylim=[-g_range, g_range])
-    ax_line.set_xticks([0, 1, 2, 3, 4])
+    ax_line.set(xlim=[0.5, 3.5], ylim=[-g_range, g_range])
+    ax_line.set_xticks([1, 2, 3])
     ax_line.grid(alpha=0.25)
     ax_line.set_xlabel("Distance along curve (mm)")
     ax_line.set_ylabel("G-Factor")
@@ -222,8 +222,8 @@ def plot_riv_og_line(ax_line):
     for i, scan in enumerate(scans):
         ax_line.plot(curve_x, scans[scan], color=colors[i], linewidth=lwidth)
 
-    ax_line.set(xlim=[0, 4], ylim=[-g_range, g_range])
-    ax_line.set_xticks([0, 1, 2, 3, 4])
+    ax_line.set(xlim=[0.5, 3.5], ylim=[-g_range, g_range])
+    ax_line.set_xticks([1, 2, 3])
     ax_line.grid(alpha=0.25)
     ax_line.set_xlabel("Distance along curve (mm)")
     ax_line.set_ylabel("G-Factor")

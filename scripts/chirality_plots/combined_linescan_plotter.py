@@ -43,8 +43,8 @@ def _build_riv_code_data():
 
     curves = {}
     scans = {}
-    for i in range(4):
-        curves[f"y{i}"] = curve_y - i * 0.4
+    for i in range(3):
+        curves[f"y{i}"] = curve_y - i * 1.0
         scans[f"scan{i}"] = create_scans_from_path(curves[f"y{i}"])
 
     return Z, x, y, curve_x, curves, scans
@@ -81,8 +81,8 @@ def _build_riv_og_data():
 
     curves = {}
     scans = {}
-    for i in range(4):
-        curves[f"y{i}"] = curve_y - i * 0.5
+    for i in range(3):
+        curves[f"y{i}"] = curve_y - i * 1.2
         scans[f"scan{i}"] = create_scans_from_path(curves[f"y{i}"])
 
     return Z, x, y, curve_x, curves, scans
@@ -267,7 +267,7 @@ def plot_line_scans_dual_axis(t_scans: dict, e_scans: dict):
     ax_e.set_yticks((left_ticks - b) / a)
 
     ax_t.grid(True, which="major", alpha=0.25)
-    ax_t.set_xlim(-2.0, 2.0)
+    ax_t.set_xlim(-1.6, 1.6)
     ax_t.tick_params(
         labelbottom=False,
         labelleft=False,
