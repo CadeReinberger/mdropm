@@ -7,7 +7,7 @@ class solver_params:
     ### Gas Phase FEM Params ###
     #------------------------------------------#
     GAS_PHASE_DYNAMIC_LC = True
-    GAS_PHASE_DEFAULT_LC = .5
+    GAS_PHASE_DEFAULT_LC = .6
     # For slide outside, slide-to-drop, and drop inside. Can be Nones
     GAS_PHASE_LC_KS = (.4, .4, .4)
     GAS_PHASE_MESH_FILE = 'internal/gas_msh.msh'
@@ -17,7 +17,7 @@ class solver_params:
 
     ### Liquid Phase FEM Params ####
     #------------------------------------------#
-    LIQUID_PHASE_DEFAULT_LC = .5  
+    LIQUID_PHASE_DEFAULT_LC = .6  
     LIQUID_PHASE_DYNAMIC_LC_K = .4 #.4 # Can be None
     LIQUID_PHASE_MESH_FILE = 'internal/liquid_msh.msh'
     #------------------------------------------#
@@ -25,7 +25,7 @@ class solver_params:
 
     ### Overall FEM Params ###
     #------------------------------------------#
-    FEM_ELT_ORDER = 3
+    FEM_ELT_ORDER = 2 # Was 3 for most of the time!
     FEM_SHAPE_ORDER = 2 # For splines and shapes
     PROJECT_OUTSIDE_MESH = True
     #------------------------------------------#

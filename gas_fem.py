@@ -77,18 +77,12 @@ def make_gmesh_mesh(dr_x, dr_y, ts, sps):
     gmsh.model.mesh.generate(2)
     gmsh.model.mesh.setOrder(sps.FEM_SHAPE_ORDER)
 
-    # Write the mesh
-    gmsh.write(sps.GAS_PHASE_MESH_FILE)
-
-    # Finalize and return
-    gmsh.finalize()
-    return 
-
 # viz here is a diagnostic check
 def solve_concentration_field(dr_x, dr_y, hs, ts, pps, sps, viz=False):
     # Start by making and reading the mesh
     make_gmesh_mesh(dr_x, dr_y, ts, sps)
-    (mesh, cell_tags, facet_tags) = gmshio.read_from_msh(sps.GAS_PHASE_MESH_FILE, MPI.COMM_WORLD, gdim=2)
+    (mesh, cell_tags, facet_tags) = gmshio.model_to_mesh(gmsh.model, MPI.COMM_WORLD, 0, gdim=2)
+    gmsh.finalize()
 
     ## First, set up the FEM problem
 
@@ -116,7 +110,7 @@ def solve_concentration_field(dr_x, dr_y, hs, ts, pps, sps, viz=False):
     bcs = [bc_hd, bc_id]
 
     # Make the problem and solve it
-    problem = LinearProblem(a, L, bcs=bcs, petsc_options={'ksp_type' : 'preonly', 'pc_type' : 'lu'})
+    problem = LinearProblem(a, L, bcs=bcs, petsc_options={'ksp_type': 'minres', 'pc_type': 'hypre', 'pc_hypre_type': 'boomeramg'})
     uh = problem.solve() # If you've got a problem yo I'll solve it
 
     if viz:

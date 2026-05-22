@@ -59,16 +59,13 @@ def make_gmesh_mesh(dr_x, dr_y, sps):
     # Generate the mesh
     gmsh.model.mesh.generate(2)
     gmsh.model.mesh.setOrder(sps.FEM_SHAPE_ORDER)
-
-    # Write the mesh
-    gmsh.write(sps.LIQUID_PHASE_MESH_FILE)
     return
 
 
 def solve_pressure_field(dr_x, dr_y, ps, hs, pps, sps, viz=False):
     # Make and read the mesh
     make_gmesh_mesh(dr_x, dr_y, sps)
-    (mesh, cell_tags, facet_tags) = gmshio.read_from_msh(sps.LIQUID_PHASE_MESH_FILE, MPI.COMM_WORLD, gdim=2)
+    (mesh, cell_tags, facet_tags) = gmshio.model_to_mesh(gmsh.model, MPI.COMM_WORLD, 0, gdim=2)
 
     ## First, set up the FEM problem 
 
@@ -101,7 +98,7 @@ def solve_pressure_field(dr_x, dr_y, ps, hs, pps, sps, viz=False):
 
     ## Make and solve the problem
     
-    problem = LinearProblem(a, L, bcs=[bc], petsc_options={'ksp_type' : 'preonly', 'pc_type' : 'lu'})
+    problem = LinearProblem(a, L, bcs=[bc], petsc_options={'ksp_type': 'minres', 'pc_type': 'hypre', 'pc_hypre_type': 'boomeramg'})
     uh = problem.solve()
 
     if viz: 
