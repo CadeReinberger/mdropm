@@ -25,7 +25,7 @@ class solver_params:
 
     ### Overall FEM Params ###
     #------------------------------------------#
-    FEM_ELT_ORDER = 2 # Was 3 for most of the time!
+    FEM_ELT_ORDER = 3 # idk what's best 
     FEM_SHAPE_ORDER = 2 # For splines and shapes
     PROJECT_OUTSIDE_MESH = True
     #------------------------------------------#
