@@ -257,10 +257,11 @@ def main():
     # fig_heatmap.tight_layout()
     fig_heatmap.savefig("riv_code_colormap.png", dpi=300)
 
-    fig_line, ax_line = plt.subplots(figsize=(6.75, 6))
-    plot_riv_code_line(ax_line)
-    fig_line.tight_layout()
-    plt.show()
+    # We don't need any of this anymore for our purposes 
+    # fig_line, ax_line = plt.subplots(figsize=(6.75, 6))
+    #plot_riv_code_line(ax_line)
+    #fig_line.tight_layout()
+    #plt.show()
 
 
 if __name__ == "__main__":
