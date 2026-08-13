@@ -3,11 +3,11 @@ from scipy.interpolate import CubicSpline, LinearNDInterpolator, Akima1DInterpol
 import pickle
 from matplotlib import pyplot as plt
 
-current_area_loc = 'archived/run_25_half/out/results.pkl'
+current_area_loc = 'archived/run_25_half/out/results.pkl' # 'archived/first_run_flat/out/results.pkl' # 'archived/run_25_half/out/results.pkl'
 with open(current_area_loc, 'rb') as in_file:
     res_dict = pickle.load(in_file)
 
-K_ALPHA = .2 * .09 # Minutes
+K_ALPHA = .2 # mm 
 
 start_ind = 2
 UE = 1
@@ -444,6 +444,11 @@ def make_alpha_plot(ts, xs, ys, k_alpha=K_ALPHA):
         with open('data.pkl', 'wb') as file:
             pickle.dump(Z, file)
         # Z = smooth_grid_field(Z, x, y, method="helmholtz", length_scale=0.025)  # pick a physical length
+        
+        np.save('200_microns_alpha.npy', Z)
+        print('Good Save Worked?')
+
+        print(f'MAX: {Z.max()}')
 
         # Get the colorscale we want
         z_flat = Z.flatten()
