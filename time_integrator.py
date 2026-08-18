@@ -13,6 +13,14 @@ def compute_deriv_function(starting_drop, prob_univ):
     k_p = 1 / (3 * prob_univ.phys_ps.mu)
     k_w = prob_univ.phys_ps.D * prob_univ.phys_ps.c_g / prob_univ.phys_ps.c_l
 
+    # The gas concentration is independent of contact angle. Stiff solvers
+    # repeatedly evaluate identical x/y geometry with perturbed theta values
+    # while estimating a Jacobian; re-solving the gas FEM problem in those
+    # calls is both wasteful and another source of numerical jitter.
+    gas_cache_x = None
+    gas_cache_y = None
+    gas_cache_grad = None
+
     # Let's make the function that will define our ODE
     def compute_deriv(t, state_vec):
 
@@ -61,7 +69,18 @@ def compute_deriv_function(starting_drop, prob_univ):
 
         # Now, we use the liquid and gase phase fem solvers to get gradients
         grad_p = compute_pressure_gradients(dr_x, dr_y, p_arr, prob_univ)
-        grad_w = compute_concentration_gradients(dr_x, dr_y, prob_univ)
+        nonlocal gas_cache_x, gas_cache_y, gas_cache_grad
+        if (
+            gas_cache_x is not None
+            and np.array_equal(dr_x, gas_cache_x)
+            and np.array_equal(dr_y, gas_cache_y)
+        ):
+            grad_w = gas_cache_grad
+        else:
+            grad_w = compute_concentration_gradients(dr_x, dr_y, prob_univ)
+            gas_cache_x = dr_x.copy()
+            gas_cache_y = dr_y.copy()
+            gas_cache_grad = grad_w
 
         # Now, we initialize some arrays to store our derivatives
         dr_x_t = np.zeros(n)
@@ -151,7 +170,6 @@ def compute_deriv_function(starting_drop, prob_univ):
             # Finally, add the theta_dot that we want here
             dr_theta_t[i] = theta_t
 
-        print(f'dr_theta_t: {dr_theta_t}')
         # Now we compute the derivative of our state vector
         st_vec_deriv = np.zeros(3*n)
         st_vec_deriv[:n] = dr_x_t
@@ -166,7 +184,13 @@ def compute_deriv_function(starting_drop, prob_univ):
 
     return compute_deriv
 
-def solve_problem(starting_drop, prob_univ):
+def solve_problem(starting_drop, prob_univ, resume_state=None, checkpoint_callback=None):
+    """Solve a drop, optionally resuming and checkpointing after every outer step.
+
+    ``checkpoint_callback`` receives a plain dictionary that can be pickled.  A
+    crash can lose at most the currently running outer LSODA interval.
+    Existing callers need no changes.
+    """
     
     # First, make the derivative function that we're gonna need
     f = compute_deriv_function(starting_drop, prob_univ)
@@ -179,7 +203,7 @@ def solve_problem(starting_drop, prob_univ):
     x0[2*n:3*n] = starting_drop.theta
 
     # Initialize our loop variables
-    cur_t = 0
+    cur_t = 0.0
     cur_x = x0
 
     # Get our radau stuff plz
@@ -188,22 +212,83 @@ def solve_problem(starting_drop, prob_univ):
     radau_eval_linsp_n = prob_univ.sol_ps.RADAU_EVAL_LINSPACE_N
     radau_out_every = prob_univ.sol_ps.RADAU_OUT_EVERY
     check_self_inter_dt = prob_univ.sol_ps.CHECK_SELF_INTERSECTION_DT
+    ode_method = getattr(prob_univ.sol_ps, "ODE_METHOD", "LSODA")
+    ode_rtol = getattr(prob_univ.sol_ps, "ODE_RTOL", 1e-3)
+    ode_atol = getattr(prob_univ.sol_ps, "ODE_ATOL", 1e-6)
+    use_theta_jacobian = getattr(prob_univ.sol_ps, "ODE_THETA_JACOBIAN", False)
+    jac_eps = getattr(prob_univ.sol_ps, "ODE_JAC_EPS", 1e-5)
+
+    def theta_jacobian(t, state):
+        """Approximate the stiff theta columns; x/y coupling is left to Newton."""
+        base = f(t, state)
+        jacobian = np.zeros((state.size, state.size))
+        theta_r = prob_univ.phys_ps.theta_r
+        theta_a = prob_univ.phys_ps.theta_a
+        for column in range(2 * n, 3 * n):
+            perturbed = state.copy()
+            step = jac_eps * max(1.0, abs(state[column]))
+            # At the CASR kinks, differentiate from the active side. A forward
+            # difference at theta_r incorrectly reports zero receding stiffness
+            # and makes Newton iterations nearly stall (especially for flat runs).
+            if abs(state[column] - theta_r) <= 2 * step:
+                perturbed[column] -= step
+                jacobian[:, column] = (base - f(t, perturbed)) / step
+            elif abs(state[column] - theta_a) <= 2 * step:
+                perturbed[column] += step
+                jacobian[:, column] = (f(t, perturbed) - base) / step
+            else:
+                perturbed[column] += step
+                jacobian[:, column] = (f(t, perturbed) - base) / step
+        return jacobian
 
     # Intialize our checking variables
-    last_self_inter_check = 0
+    last_self_inter_check = 0.0
     radau_iter_count = 0
     starting_area = compute_area_shoelace(starting_drop.x, starting_drop.y)
 
     # Initialize our ouput things
     out_t = [cur_t]
-    out_x = [cur_x]
+    out_x = [cur_x.copy()]
+
+    if resume_state is not None:
+        cur_t = float(resume_state["cur_t"])
+        cur_x = np.asarray(resume_state["cur_x"], dtype=float)
+        if cur_x.shape != x0.shape or not np.all(np.isfinite(cur_x)):
+            raise ValueError("checkpoint state is incompatible or non-finite")
+        out_t = list(resume_state.get("out_t", [cur_t]))
+        out_x = [np.asarray(value, dtype=float) for value in resume_state.get("out_x", [cur_x])]
+        last_self_inter_check = float(resume_state.get("last_self_inter_check", cur_t))
+        radau_iter_count = int(resume_state.get("radau_iter_count", 0))
+        saved_area = float(resume_state.get("starting_area", starting_area))
+        if not np.isclose(saved_area, starting_area):
+            raise ValueError("checkpoint was made for a different starting drop")
+
+    def checkpoint():
+        if checkpoint_callback is not None:
+            checkpoint_callback({
+                "version": 1,
+                "cur_t": float(cur_t),
+                "cur_x": np.asarray(cur_x, dtype=float),
+                "out_t": out_t,
+                "out_x": out_x,
+                "last_self_inter_check": float(last_self_inter_check),
+                "radau_iter_count": int(radau_iter_count),
+                "starting_area": float(starting_area),
+            })
+
+    checkpoint()
 
     while True:
 
-        # Check if we're over our timestep
-        if cur_t > prob_univ.sol_ps.T_FIN:
+        # These checks also make a checkpoint taken immediately before normal
+        # termination safe to resume without performing one extra solve step.
+        if cur_t >= prob_univ.sol_ps.T_FIN:
             print('Solve Complete with condition: FINAL_TIME_HIT')
-            break 
+            break
+        cur_area_rat = compute_area_shoelace(cur_x[:n], cur_x[n:2*n]) / starting_area
+        if cur_area_rat < prob_univ.sol_ps.END_AREA_RATIO:
+            print('Solve Complete with Condition: END_AREA_RATIO_HIT')
+            break
 
         # If it's time, check for a self intersection
         if check_self_inter_dt is not None:           
@@ -215,24 +300,36 @@ def solve_problem(starting_drop, prob_univ):
                 last_self_inter_check = cur_t
 
         # We're not done, let's prep the currennt radau step
-        new_t = cur_t + radau_dt
+        new_t = min(cur_t + radau_dt, prob_univ.sol_ps.T_FIN)
         cur_t_eval = [new_t]
         if subdiv_radau:
             cur_t_eval = np.linspace(cur_t, new_t, num=radau_eval_linsp_n)[1:]
 
-        sol = solve_ivp(f, (cur_t, cur_t + radau_dt), cur_x, t_eval=cur_t_eval, method='LSODA')
+        solve_options = {
+            "method": ode_method,
+            "rtol": ode_rtol,
+            "atol": ode_atol,
+        }
+        if use_theta_jacobian and ode_method in {"BDF", "Radau"}:
+            solve_options["jac"] = theta_jacobian
+        sol = solve_ivp(f, (cur_t, new_t), cur_x, t_eval=cur_t_eval, **solve_options)
+        if not sol.success or sol.t.size == 0:
+            raise RuntimeError(f"LSODA failed at t={cur_t}: {sol.message}")
         cur_t, cur_x = sol.t[-1], sol.y[:, -1]
+        if not np.all(np.isfinite(cur_x)):
+            raise FloatingPointError(f"non-finite solver state at t={cur_t}")
         radau_iter_count += 1
 
         # Now we add this to our output
         if subdiv_radau:
-            print(f'sol_y: {sol.y}')
             out_t.extend(sol.t)
-            out_x.extend([sol.y[:, i] for i in range(radau_eval_linsp_n-1)])
+            out_x.extend([sol.y[:, i].copy() for i in range(sol.y.shape[1])])
         else:
             if radau_iter_count % radau_out_every == 0:
                 out_t.append(cur_t)
-                out_x.append(cur_x)
+                out_x.append(cur_x.copy())
+
+        checkpoint()
 
         # Let's compute our progress to make some useful output here
         cur_area_rat = compute_area_shoelace(cur_x[:n], cur_x[n:2*n]) / starting_area

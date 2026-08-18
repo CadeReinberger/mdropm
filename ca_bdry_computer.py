@@ -247,11 +247,18 @@ def solve_p_star(par: Params) -> Tuple[Optional[float], dict]:
 
     return p_star, info
 
-def compute_p_star_over_gamma(hs, HL, R, ps):
+def compute_p_star_over_gamma(hs, *, half_length, radius, physical_params):
+    """Initial pressure ratio for a drop of ``radius`` on this heightscape.
+
+    Keyword-only geometry prevents silently swapping the plate half-length and
+    drop radius, which had contaminated the canting sweep initialization.
+    """
     A = hs.h(0, 0)
-    B = (hs.h(0, HL) - A) / HL
-    par = Params(A=A, B=B, R=R, theta_r=ps.theta_r)
+    B = (hs.h(0, half_length) - A) / half_length
+    par = Params(A=A, B=B, R=radius, theta_r=physical_params.theta_r)
     p_star, info = solve_p_star(par)
+    if p_star is None:
+        raise RuntimeError(f"failed to initialize contact angle: {info}")
     return p_star
 
 
@@ -285,4 +292,3 @@ if __name__ == "__main__":
             if k not in {"roots_found"}:
                 print(f"{k}: {v}")
         print("roots_found (validated):", info.get("roots_found"))
-

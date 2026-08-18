@@ -130,6 +130,20 @@ def compute_casr(pps):
     # First, get the constants from the pps dataclass
     theta_a, theta_r = pps.theta_a, pps.theta_r
     k_a, k_r = pps.k_a, pps.k_r
+    width = getattr(pps, "casr_smoothing_rad", 0.0)
+
+    if width > 0:
+        def sigma(theta):
+            advancing = k_a * width * np.logaddexp(0.0, (theta - theta_a) / width)
+            receding = k_r * width * np.logaddexp(0.0, (theta_r - theta) / width)
+            return advancing - receding
+
+        def sigma_prime(theta):
+            za = np.clip((theta - theta_a) / width, -700.0, 700.0)
+            zr = np.clip((theta_r - theta) / width, -700.0, 700.0)
+            return k_a / (1.0 + np.exp(-za)) + k_r / (1.0 + np.exp(-zr))
+
+        return sigma, sigma_prime
 
     # Make the CASR (linear assumption here)
     def sigma(theta):

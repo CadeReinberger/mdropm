@@ -1,20 +1,39 @@
 import pickle as pk
+import os
+import tempfile
 from dataclasses import asdict
+
+
+def atomic_pickle(obj, out_path):
+    """Durably replace ``out_path`` without ever exposing a partial pickle."""
+    out_path = os.fspath(out_path)
+    out_dir = os.path.dirname(os.path.abspath(out_path))
+    os.makedirs(out_dir, exist_ok=True)
+    fd, temp_path = tempfile.mkstemp(prefix=".pickle-", suffix=".tmp", dir=out_dir)
+    try:
+        with os.fdopen(fd, "wb") as file:
+            pk.dump(obj, file, protocol=pk.HIGHEST_PROTOCOL)
+            file.flush()
+            os.fsync(file.fileno())
+        os.replace(temp_path, out_path)
+    except BaseException:
+        try:
+            os.unlink(temp_path)
+        except FileNotFoundError:
+            pass
+        raise
 
 def pickle_output(out_t, out_x, out_path):
     pk_dict = {'out_t': out_t, 'out_x': out_x}
-    with open(out_path, 'wb') as file:
-        pk.dump(pk_dict, file)
+    atomic_pickle(pk_dict, out_path)
 
 def pickle_canting(ht_f, ht_b, rad, out_path):
     pk_dict = {'ht_front' : ht_f, 'ht_back' : ht_b, 'radius' : rad}
-    with open(out_path, 'wb') as file:
-        pk.dump(pk_dict, file)
+    atomic_pickle(pk_dict, out_path)
 
 def pickle_speed(D, out_path):
     pk_dict = {'D' : D}
-    with open(out_path, 'wb') as file:
-        pk.dump(pk_dict, file)
+    atomic_pickle(pk_dict, out_path)
 
 '''
 Alright, let's pickle everything that we have. 
@@ -44,5 +63,4 @@ def pickle_setup(drop, pu, out_file = 'out/setup.pkl'):
                   'start_drop' : drop_dict}
 
     # Now we pickle the full thing
-    with open(out_file, 'wb') as file:
-        pk.dump(setup_dict, file)
+    atomic_pickle(setup_dict, out_file)

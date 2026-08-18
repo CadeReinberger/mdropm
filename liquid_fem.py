@@ -34,6 +34,7 @@ def make_gmesh_mesh(dr_x, dr_y, sps):
     # are a common source of instability in the gmsh/MPI/PETSc stack.
     if not gmsh.isInitialized():
         gmsh.initialize()
+    gmsh.option.setNumber("General.Terminal", int(getattr(sps, "GMSH_VERBOSE", False)))
     gmsh.clear()
     model_id = uuid.uuid4().hex
     gmsh.model.add(model_id)
@@ -136,12 +137,18 @@ def compute_pressure_gradients(dr_x, dr_y, ps, pu):
 
     # Initialize a gradients to return
     grad_vecs = []
+    lc = liquid_lc(dr_x, dr_y, sps)
+    offset = float(getattr(sps, "GRADIENT_EVAL_OFFSET_LC", 0.0)) * lc
 
     # Iterate over our points and compute derivatives, based on whether or not we project outside mesh
     if not sps.PROJECT_OUTSIDE_MESH:
         # Compute colliding cells and pick one, no projection
         for ind in range(len(dr_x)):
-            eval_pt = np.array([dr_x[ind], dr_y[ind], 0])
+            im1, ip1 = ind - 1, (ind + 1) % len(dr_x)
+            tangent = np.array([dr_x[ip1] - dr_x[im1], dr_y[ip1] - dr_y[im1]])
+            normal = np.array([tangent[1], -tangent[0]]) / np.linalg.norm(tangent)
+            # The liquid domain is inside the drop.
+            eval_pt = np.array([dr_x[ind] - offset * normal[0], dr_y[ind] - offset * normal[1], 0])
             cell_candidates = compute_collisions_points(tree, eval_pt)
             cell = compute_colliding_cells(mesh, cell_candidates, eval_pt)
             cell = cell.array[0]
@@ -155,7 +162,10 @@ def compute_pressure_gradients(dr_x, dr_y, ps, pu):
         face_midpoint_tree = create_midpoint_tree(mesh, 2, all_faces)
         # Now, iterate through and see what we can do
         for ind in range(len(dr_x)):
-            eval_pt = np.array([dr_x[ind], dr_y[ind], 0])
+            im1, ip1 = ind - 1, (ind + 1) % len(dr_x)
+            tangent = np.array([dr_x[ip1] - dr_x[im1], dr_y[ip1] - dr_y[im1]])
+            normal = np.array([tangent[1], -tangent[0]]) / np.linalg.norm(tangent)
+            eval_pt = np.array([dr_x[ind] - offset * normal[0], dr_y[ind] - offset * normal[1], 0])
             closest_cell = compute_closest_entity(tree, face_midpoint_tree, mesh, eval_pt)[0]
             grad_vec = guh.eval(eval_pt, [closest_cell])
             grad_vecs.append(grad_vec)

@@ -39,11 +39,14 @@ class constructors:
         psi = np.arctan(dh_dn)
         if np.isclose(max(h), min(h)):
             # Constant Height case must be treated separately
-            ca_theta = pps.theta_r
+            ca_theta = np.full(N, pps.theta_r, dtype=float)
             return droplet(N, 2*np.pi, theta, x, y, ca_theta)
         # Otherwise we use the standard logic
-        p_star_over_gamma = compute_p_star_over_gamma(hs, R, HL, pps) 
+        p_star_over_gamma = compute_p_star_over_gamma(
+            hs,
+            half_length=HL,
+            radius=R,
+            physical_params=pps,
+        )
         ca_theta = -psi + np.arccos(-p_star_over_gamma * h)
-        print(f'ca_theta: {ca_theta}')
         return droplet(N, 2*np.pi, theta, x, y, ca_theta)
-

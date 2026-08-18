@@ -28,6 +28,10 @@ class solver_params:
     FEM_ELT_ORDER = 3 # idk what's best 
     FEM_SHAPE_ORDER = 2 # For splines and shapes
     PROJECT_OUTSIDE_MESH = True
+    GMSH_VERBOSE = False
+    # Evaluate FEM gradients just inside their domain rather than ambiguously
+    # on a boundary shared by multiple cells. Expressed as a fraction of lc.
+    GRADIENT_EVAL_OFFSET_LC = 0.1
     #------------------------------------------#
 
 
@@ -37,6 +41,11 @@ class solver_params:
     SUBDIV_RADAU = True
     RADAU_EVAL_LINSPACE_N = 10 
     RADAU_OUT_EVERY = 1
+    ODE_METHOD = 'LSODA'
+    ODE_RTOL = 1e-3
+    ODE_ATOL = 1e-6
+    ODE_THETA_JACOBIAN = False
+    ODE_JAC_EPS = 1e-5
     T_FIN = 9.9
     VERBOSE = True
 
@@ -53,5 +62,3 @@ class solver_params:
 
     def to_pickle(self):
         return asdict(self)
-
-

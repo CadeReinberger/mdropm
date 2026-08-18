@@ -18,5 +18,8 @@ class physical_params:
     theta_r: float = np.deg2rad(50) # rad
     k_a: float = .01 * (.1 * 97560/(.03222*100))/np.deg2rad(30) # (mm/s)/rad
     k_r: float = .01 * (.1 * 97560/(.03222*100))/np.deg2rad(30) # (mm/s)/rad
+    # Optional smooth transition width for the piecewise CASR law. Zero keeps
+    # the historical exact kink; production sweeps set a sub-degree width.
+    casr_smoothing_rad: float = 0.0
 
     

@@ -1,6 +1,7 @@
 import gmsh
 import numpy as np
 import uuid
+import atexit
 from geo_util import gas_lc
 from tapescape import EXTERNAL_BC_TYPES, BC_TYPES
 
@@ -17,12 +18,24 @@ from petsc4py.PETSc import ScalarType, Options
 import pyvista
 
 
+def _finalize_gmsh():
+    if gmsh.isInitialized():
+        gmsh.finalize()
+
+
+atexit.register(_finalize_gmsh)
+
+
 def make_gmesh_mesh(dr_x, dr_y, ts, sps):
     # Get the mesh fineness dynamically we're gonna use
     lc = gas_lc(dr_x, dr_y, ts, sps)
 
-    # Just initialize a new gmesh
-    gmsh.initialize()
+    # Reuse the process-wide gmsh session. Repeated initialize/finalize cycles
+    # are expensive and have proven fragile during long sweeps.
+    if not gmsh.isInitialized():
+        gmsh.initialize()
+    gmsh.option.setNumber("General.Terminal", int(getattr(sps, "GMSH_VERBOSE", False)))
+    gmsh.clear()
     model_id = uuid.uuid4().hex
     gmsh.model.add(model_id)
     factory = gmsh.model.geo
@@ -82,7 +95,6 @@ def solve_concentration_field(dr_x, dr_y, hs, ts, pps, sps, viz=False):
     # Start by making and reading the mesh
     make_gmesh_mesh(dr_x, dr_y, ts, sps)
     (mesh, cell_tags, facet_tags) = gmshio.model_to_mesh(gmsh.model, MPI.COMM_WORLD, 0, gdim=2)
-    gmsh.finalize()
 
     ## First, set up the FEM problem
 
@@ -148,12 +160,18 @@ def compute_concentration_gradients(dr_x, dr_y, pu):
 
     # Initialize a gradients to return
     grad_vecs = []
+    lc = gas_lc(dr_x, dr_y, ts, sps)
+    offset = float(getattr(sps, "GRADIENT_EVAL_OFFSET_LC", 0.0)) * lc
 
     # Iterate over our points and compute derivatives, based on whether or not we project outside mesh
     if not sps.PROJECT_OUTSIDE_MESH:
         # Compute colliding cells and pick one, no projection
         for ind in range(len(dr_x)):
-            eval_pt = np.array([dr_x[ind], dr_y[ind], 0])
+            im1, ip1 = ind - 1, (ind + 1) % len(dr_x)
+            tangent = np.array([dr_x[ip1] - dr_x[im1], dr_y[ip1] - dr_y[im1]])
+            normal = np.array([tangent[1], -tangent[0]]) / np.linalg.norm(tangent)
+            # The gas domain is outside the drop.
+            eval_pt = np.array([dr_x[ind] + offset * normal[0], dr_y[ind] + offset * normal[1], 0])
             cell_candidates = compute_collisions_points(tree, eval_pt)
             cell = compute_colliding_cells(mesh, cell_candidates, eval_pt)
             cell = cell.array[0]
@@ -167,7 +185,10 @@ def compute_concentration_gradients(dr_x, dr_y, pu):
         face_midpoint_tree = create_midpoint_tree(mesh, 2, all_faces)
         # Now, iterate through and see what we can do
         for ind in range(len(dr_x)):
-            eval_pt = np.array([dr_x[ind], dr_y[ind], 0])
+            im1, ip1 = ind - 1, (ind + 1) % len(dr_x)
+            tangent = np.array([dr_x[ip1] - dr_x[im1], dr_y[ip1] - dr_y[im1]])
+            normal = np.array([tangent[1], -tangent[0]]) / np.linalg.norm(tangent)
+            eval_pt = np.array([dr_x[ind] + offset * normal[0], dr_y[ind] + offset * normal[1], 0])
             closest_cell = compute_closest_entity(tree, face_midpoint_tree, mesh, eval_pt)[0]
             grad_vec = guh.eval(eval_pt, [closest_cell])
             grad_vecs.append(grad_vec)
