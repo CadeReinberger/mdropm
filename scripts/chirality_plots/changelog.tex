@@ -1,0 +1,65 @@
+\documentclass[11pt]{article}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{amsmath}
+\pagestyle{empty}
+
+\begin{document}
+\section*{Canting calculation: changes}
+The governing equations and material parameters are unchanged.
+
+\begin{itemize}
+\setlength{\itemsep}{0.6em}
+
+\item Mesh: create each \verb|Gmsh| mesh once, then use custom
+\verb|radial mesh motion| with fixed connectivity. This removes repeated
+remeshing and the resulting jumps in computed gradients.
+
+\item Field solves: recover continuous gradients using \verb|L2 projection|;
+interpolate boundary pressure using a \verb|periodic cubic spline|.
+Use \verb|LU factorization| for the linear systems and reuse the FEM setup.
+
+\item Resolution: increase contact-line nodes from 20 to 80, use cubic FEM
+fields, and decrease mesh size from $0.60$ to $0.30\,\mathrm{mm}$.
+Keep \verb|BDF| time integration, with tolerances
+$(\mathrm{rtol},\mathrm{atol})=(10^{-6},10^{-8})$; enforce left/right symmetry.
+
+\item Curvature: use \verb|centered finite differences| along the contact line
+$\mathbf r(s,t)$, avoiding second time derivatives of trajectory splines:
+\begin{gather*}
+  D_s f_i=\frac{f_{i+1}-f_{i-1}}{2\Delta s},\qquad
+  \mathbf T=D_s\mathbf r,\qquad
+  \mathbf v=\sigma(\theta)\mathbf n,\\
+  \alpha=K_\alpha\kappa,\qquad
+  \kappa=\frac{\mathbf T\times D_s\mathbf v}
+                    {|\mathbf T|^2\,|\sigma(\theta)|}.
+\end{gather*}
+Here $\times$ denotes the scalar two-dimensional cross product.
+Exclude nearly stationary samples, where curvature is unreliable.
+
+\item Averaging: use a \verb|Gaussian kernel| and the \verb|trapezoidal rule|
+for a spatial mean, replacing the time-sample-weighted robust average.
+For mirror-paired samples $(+,-)$, with $\alpha$ in radians and $x$ in mm,
+\begin{gather*}
+  g_k=\frac{180}{\pi}\,
+       \frac{\alpha_{k,+}-\alpha_{k,-}}{x_{k,+}-x_{k,-}},\qquad
+  g=\frac{\sum_k W_k g_k}{\sum_k W_k},\\
+  W_k=\exp\!\left[-\frac{|\mathbf r_k-\mathbf r_0|^2}{2\ell^2}\right]
+      |\sigma_k|\,|\mathbf T_k|\,\omega_k,
+  \qquad \ell=0.30\,\mathrm{mm}.
+\end{gather*}
+Here $\omega_k$ is the trapezoidal time weight; the constant material-node
+spacing cancels. The evaluation point remains
+$\mathbf r_0=(1.35,\,2.7\cos(\pi/6))\,\mathrm{mm}$.
+Post-processing-only error bars are
+$\Delta g=(\max g_{\rm variants}-\min g_{\rm variants})/2$,
+varying kernel width, stationary-speed cutoff, and saved-sample spacing.
+
+\item More runs: increase from 9 to 24 independently simulated heights,
+concentrated around the bend. Use \verb|process parallelism| with six workers
+and one numerical-library thread per worker. Reuse matching completed runs,
+resume checkpoints, and skip completed cases. The black curve is a separate
+\verb|nonlinear least squares| fit; no smoothing across heights is applied
+to the simulation points.
+
+\end{itemize}
+\end{document}
