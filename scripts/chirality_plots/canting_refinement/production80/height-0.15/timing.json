@@ -1,0 +1,8 @@
+{
+  "minimum_gas_mesh_area_ratio": 0.7555459444366874,
+  "minimum_liquid_mesh_area_ratio": 0.36640164382387264,
+  "rhs_evaluations": 1586,
+  "samples": 301,
+  "t_final": 3.0,
+  "wall_seconds": 245.74331086999996
+}
