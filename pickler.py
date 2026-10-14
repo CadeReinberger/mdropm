@@ -47,7 +47,7 @@ def pickle_setup(drop, pu, out_file = 'out/setup.pkl'):
     pp_dict = asdict(pu.phys_ps)
 
     # Next, let's pickle the solver parameters
-    sp_dict = asdict(pu.sol_ps)
+    sp_dict = pu.sol_ps.to_pickle()
 
     # Now, we pickle the tapescape
     tp_dict = pu.tpscp.picklable()

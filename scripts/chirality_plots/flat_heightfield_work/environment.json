@@ -1,9 +1,0 @@
-{
-  "numpy": "2.4.3",
-  "scipy": "1.16.3",
-  "matplotlib": "3.9.2",
-  "fenics-dolfinx": "0.9.0",
-  "mpi4py": "4.0.1",
-  "petsc4py": "3.21.6",
-  "python": "3.13.0 | packaged by conda-forge | (main, Oct  8 2024, 20:04:32) [GCC 13.3.0]"
-}

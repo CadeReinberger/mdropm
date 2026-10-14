@@ -4,7 +4,7 @@ import heightscape
 from ca_bdry_computer import compute_p_star_over_gamma
 from geo_util import compute_casr
 from physical_params import physical_params
-from scripts.chirality_plots.canting_plotter import saturating_response
+from canting_plotter import saturating_response
 
 
 def test_smoothed_casr_matches_piecewise_law_away_from_transition():

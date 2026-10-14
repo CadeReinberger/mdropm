@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
-"""Crash-resumable canting parameter sweep.
-
-Each height gets a deterministic directory.  ``checkpoint.pkl`` is atomically
-replaced after every outer LSODA interval and is automatically resumed on the
-next invocation.  Completed heights are skipped, so rerunning the same command
-is safe after a process, machine, or power failure.
-"""
+"""Shared problem construction and checkpoint metadata for the ALE runners."""
 
 from __future__ import annotations
 
-import argparse
 from dataclasses import asdict
 import hashlib
 import json
@@ -25,22 +18,7 @@ import heightscape
 import physical_params
 import solver_params
 import tapescape
-from pickler import atomic_pickle, pickle_canting, pickle_output
 from problem_universe import problem_universe
-from time_integrator import solve_problem
-
-
-def parse_ratios(text: str) -> list[float]:
-    values = [float(value) for value in text.split(",") if value.strip()]
-    if not values or any(value < 0 for value in values):
-        raise argparse.ArgumentTypeError("ratios must be a nonempty comma-separated list of nonnegative numbers")
-    return values
-
-
-def run_name(height_ratio: float) -> str:
-    # Human-readable and deterministic; 12 significant digits avoids collisions
-    # for ordinary parameter sweeps.
-    return f"height-{height_ratio:.12g}".replace("+", "")
 
 
 def build_problem(height_ratio: float, nodes: int, profile: str = "production"):
@@ -154,68 +132,7 @@ def valid_result(path: Path) -> bool:
         return False
 
 
-def run_one(output_dir: Path, height_ratio: float, nodes: int, profile: str = "production") -> None:
-    run_dir = output_dir / run_name(height_ratio)
-    run_dir.mkdir(parents=True, exist_ok=True)
-    result_path = run_dir / "results.pkl"
-    checkpoint_path = run_dir / "checkpoint.pkl"
-    manifest_path = run_dir / "manifest.json"
-    height_front, height_back, drop, universe = build_problem(height_ratio, nodes, profile)
-    expected = run_manifest(height_ratio, nodes, height_front, height_back, drop, universe)
-    if manifest_path.exists():
-        existing = json.loads(manifest_path.read_text())
-        if existing != expected:
-            raise ValueError(f"run settings conflict in {run_dir}: {existing} != {expected}")
-    else:
-        atomic_json(expected, manifest_path)
-    if not (run_dir / "setup.pkl").exists():
-        pickle_canting(height_front, height_back, 3, run_dir / "setup.pkl")
-    if result_path.exists() and valid_result(result_path):
-        print(f"[done]   height ratio {height_ratio:g}: {result_path}")
-        return
-    if result_path.exists():
-        print(f"[repair] invalid result at {result_path}; recovering from its checkpoint")
-
-    resume_state = read_checkpoint(checkpoint_path)
-    action = "resume" if resume_state else "start"
-    print(f"[{action}] height ratio {height_ratio:g} in {run_dir}")
-    out_t, out_x = solve_problem(
-        drop,
-        universe,
-        resume_state=resume_state,
-        checkpoint_callback=lambda state: atomic_pickle(state, checkpoint_path),
-    )
-    pickle_output(out_t, out_x, result_path)
-    # Keep the last checkpoint: it is useful provenance and makes completion
-    # recoverable even if results.pkl is later damaged.
-    print(f"[done]   height ratio {height_ratio:g}: {result_path}")
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output-dir", type=Path, default=Path("canting_runs"))
-    parser.add_argument(
-        "--ratios",
-        type=parse_ratios,
-        default=parse_ratios("0,0.222222222222,0.444444444444,0.666666666667,0.888888888889,1.11111111111,1.33333333333,1.55555555556,1.77777777778,2"),
-        help="comma-separated raw front/back height changes (default: 10 points from 0 to 2)",
-    )
-    parser.add_argument("--nodes", type=int, default=20, choices=range(8, 81, 4), metavar="N")
-    parser.add_argument(
-        "--profile",
-        choices=("production", "production_lsoda", "reference", "mesh_reference", "default"),
-        default="production",
-        help="production_lsoda is the robust fallback for cases where BDF stalls near a CASR transition",
-    )
-    return parser.parse_args()
-
-
-def main() -> None:
-    args = parse_args()
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-    for height_ratio in args.ratios:
-        run_one(args.output_dir, height_ratio, args.nodes, args.profile)
-
-
 if __name__ == "__main__":
+    # Retain the familiar command name, using the refined solver by default.
+    from canting_refine import main
     main()

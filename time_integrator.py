@@ -1,11 +1,19 @@
 from geo_util import Lambda, Lambda_pr, compute_casr, compute_area_shoelace, is_simple
-from gas_fem import compute_concentration_gradients
-from liquid_fem import compute_pressure_gradients
 from scipy.integrate import solve_ivp
 import numpy as np
 
-def compute_deriv_function(starting_drop, prob_univ):
-    
+def compute_deriv_function(starting_drop, prob_univ, *, fem=None):
+    """Build an RHS using persistent meshes and L2 gradient recovery.
+
+    The default reference is the initial circular drop. Long runs pass a
+    rebased FEM instance for each integration segment (see main.py).
+    """
+    if fem is None:
+        from canting_ale_fem import MovingFEM
+        fem = MovingFEM(starting_drop.x, starting_drop.y, prob_univ)
+    compute_concentration_gradients = fem.concentration
+    compute_pressure_gradients = fem.pressure
+
     # Compute a few global utils and such
     n = starting_drop.n
     ds = starting_drop.L / n
@@ -184,7 +192,8 @@ def compute_deriv_function(starting_drop, prob_univ):
 
     return compute_deriv
 
-def solve_problem(starting_drop, prob_univ, resume_state=None, checkpoint_callback=None):
+def solve_problem(starting_drop, prob_univ, resume_state=None, checkpoint_callback=None,
+                  *, derivative_function=None):
     """Solve a drop, optionally resuming and checkpointing after every outer step.
 
     ``checkpoint_callback`` receives a plain dictionary that can be pickled.  A
@@ -193,7 +202,7 @@ def solve_problem(starting_drop, prob_univ, resume_state=None, checkpoint_callba
     """
     
     # First, make the derivative function that we're gonna need
-    f = compute_deriv_function(starting_drop, prob_univ)
+    f = derivative_function if derivative_function is not None else compute_deriv_function(starting_drop, prob_univ)
 
     # Now make the x0 that we're gonna use
     n = starting_drop.n
@@ -314,7 +323,7 @@ def solve_problem(starting_drop, prob_univ, resume_state=None, checkpoint_callba
             solve_options["jac"] = theta_jacobian
         sol = solve_ivp(f, (cur_t, new_t), cur_x, t_eval=cur_t_eval, **solve_options)
         if not sol.success or sol.t.size == 0:
-            raise RuntimeError(f"LSODA failed at t={cur_t}: {sol.message}")
+            raise RuntimeError(f"{ode_method} failed at t={cur_t}: {sol.message}")
         cur_t, cur_x = sol.t[-1], sol.y[:, -1]
         if not np.all(np.isfinite(cur_x)):
             raise FloatingPointError(f"non-finite solver state at t={cur_t}")

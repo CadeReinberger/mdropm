@@ -61,4 +61,6 @@ class solver_params:
     #-------------------------------------------#
 
     def to_pickle(self):
-        return asdict(self)
+        # These settings are class attributes, so dataclasses.asdict is empty.
+        return {name: getattr(self, name) for name in dir(self)
+                if name.isupper() and not callable(getattr(self, name))}
