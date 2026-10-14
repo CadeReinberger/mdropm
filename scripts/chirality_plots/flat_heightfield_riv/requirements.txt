@@ -1,0 +1,5 @@
+# Plotting only; FEM is not needed to rerender the included data.
+# Tested with NumPy 2.4.3, SciPy 1.16.3, Matplotlib 3.9.2, Python 3.13.
+numpy>=2.0
+scipy>=1.13
+matplotlib>=3.9

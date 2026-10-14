@@ -1,0 +1,178 @@
+{
+  "fresh_three_unit_reference_max_state_difference": 0.0,
+  "initial_fem_diagnostic": {
+    "constant_gradient_max_error": 3.8399793745378607e-14,
+    "geometry_time": 0.0,
+    "lc": 0.3,
+    "linear_gradient_max_error": 2.059146755317709e-05,
+    "measurements": [
+      {
+        "delta_x_mm": 0,
+        "difference_inf": 0.0,
+        "rhs_inf": 5.570380447325336,
+        "seconds": 4.327573202999929
+      },
+      {
+        "delta_x_mm": 1e-08,
+        "difference_inf": 2.4777474072479322e-08,
+        "rhs_inf": 5.5703804473554595,
+        "seconds": 0.1909234469999319
+      },
+      {
+        "delta_x_mm": 1e-06,
+        "difference_inf": 2.4746808582332136e-06,
+        "rhs_inf": 5.570380447123208,
+        "seconds": 0.1963787949998732
+      },
+      {
+        "delta_x_mm": 0.0001,
+        "difference_inf": 0.00024745139952406237,
+        "rhs_inf": 5.57038042655109,
+        "seconds": 0.17714927599990915
+      },
+      {
+        "delta_x_mm": 0,
+        "difference_inf": 0.0,
+        "rhs_inf": 5.570380447325336,
+        "seconds": 0.1655960140001298
+      }
+    ],
+    "nodes": 80,
+    "order": 3,
+    "vertical_gradient_relative_max_error": 1.7621713625307982e-05
+  },
+  "pytest": "10 passed: test_flat_heightfield_map.py and test_canting_refinement.py",
+  "continuation_sensitivity": {
+    "description": "Continuation from the same t=21 state, rebuilding every 3 versus 1.5 time units",
+    "map_grid_shape": [
+      326,
+      301
+    ],
+    "common_finite_grid_points": 86456,
+    "map_max_absolute_difference_degrees": 0.01021440449466221,
+    "map_rms_difference_degrees": 0.000409678922398363,
+    "late_strip_max_difference_degrees": 0.01021440449466221,
+    "final_position_max_difference_mm": 5.750001415438799e-05,
+    "final_contact_angle_max_difference_rad": 9.66896322895927e-07
+  },
+  "raw_trajectory_checks": {
+    "samples": 2401,
+    "nodes": 80,
+    "start_time": 0,
+    "end_time": 24,
+    "sample_spacing": 0.01,
+    "finite": true,
+    "retains_fresh_short_run_exactly": true
+  },
+  "reference_pressure_checks": [
+    {
+      "constant_error": 4.4891971238803434e-14,
+      "linear_x_error": 0.0007503909608482795,
+      "linear_y_error": 0.0005836640488663639,
+      "reference_time": 12.0
+    },
+    {
+      "constant_error": 3.7593159550511726e-14,
+      "linear_x_error": 0.0010221930789585665,
+      "linear_y_error": 0.0006733062750825838,
+      "reference_time": 15.0
+    },
+    {
+      "constant_error": 2.9140369130624946e-14,
+      "linear_x_error": 0.0015220300858878044,
+      "linear_y_error": 0.0009020976760245175,
+      "reference_time": 18.0
+    },
+    {
+      "constant_error": 3.4027347956875315e-14,
+      "linear_x_error": 0.00018461228239050992,
+      "linear_y_error": 0.00014441243138496596,
+      "reference_time": 3.0
+    },
+    {
+      "constant_error": 3.541753237899378e-14,
+      "linear_x_error": 0.00033869443590273107,
+      "linear_y_error": 0.0002604337610942807,
+      "reference_time": 6.0
+    },
+    {
+      "constant_error": 3.2836629307255564e-14,
+      "linear_x_error": 0.00047864390756702235,
+      "linear_y_error": 0.0003069391417460654,
+      "reference_time": 9.0
+    },
+    {
+      "constant_error": 3.6849251799275824e-14,
+      "linear_x_error": 0.002976211190422129,
+      "linear_y_error": 0.0015610199774102052,
+      "reference_time": 21.0
+    }
+  ],
+  "mesh_segments": [
+    {
+      "start": 0.0,
+      "end": 3.0,
+      "minimum_gas_mesh_area_ratio": 0.9521975312492295,
+      "minimum_liquid_mesh_area_ratio": 0.6223716545794619
+    },
+    {
+      "end": 6.0,
+      "gas_minimum_area_ratio": 0.9331707193379717,
+      "liquid_minimum_area_ratio": 0.6497755053821446,
+      "start": 3.0
+    },
+    {
+      "end": 9.0,
+      "gas_minimum_area_ratio": 0.9219450832108761,
+      "liquid_minimum_area_ratio": 0.661706942134332,
+      "start": 6.0
+    },
+    {
+      "end": 12.0,
+      "gas_minimum_area_ratio": 0.9137229401926334,
+      "liquid_minimum_area_ratio": 0.6602413008478669,
+      "start": 9.0
+    },
+    {
+      "end": 15.0,
+      "gas_minimum_area_ratio": 0.8943525788414762,
+      "liquid_minimum_area_ratio": 0.6447515339870858,
+      "start": 12.0
+    },
+    {
+      "end": 18.0,
+      "gas_minimum_area_ratio": 0.8572013699301605,
+      "liquid_minimum_area_ratio": 0.6149813786455327,
+      "start": 15.0
+    },
+    {
+      "end": 21.0,
+      "gas_minimum_area_ratio": 0.8042230893160418,
+      "liquid_minimum_area_ratio": 0.5508884616555607,
+      "start": 18.0
+    },
+    {
+      "end": 24.0,
+      "gas_minimum_area_ratio": 0.7180299834240423,
+      "liquid_minimum_area_ratio": 0.4430379977755991,
+      "start": 21.0
+    }
+  ],
+  "simulation_wall_seconds": 625.3528590270002,
+  "limits": "The late-segment rebuilding check is not a full node/mesh convergence study or an absolute-amplitude calibration.",
+  "bundle_checks": {
+    "pickle_npz_equality": true,
+    "riv_loads_exact_pickle_with_original_flip": true,
+    "all_visible_line_scans_finite": true,
+    "experimental_csv_unchanged": true,
+    "raw_results_hash_verified": true,
+    "all_seven_pngs_present": true,
+    "bundled_fem_source_smoke_passed": true
+  },
+  "bundled_source_smoke": {
+    "nodes": 20,
+    "lc": 0.6,
+    "t_final": 0.25,
+    "completed": true
+  }
+}

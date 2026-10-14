@@ -1,0 +1,10 @@
+{
+  "area_ratio": 0.14723501040338027,
+  "gas_minimum_area_ratio": 0.7180299834240423,
+  "liquid_minimum_area_ratio": 0.4430379977755991,
+  "rhs_evaluations": 1266,
+  "t": 24.0,
+  "target_t": 24.0,
+  "top_y_mm": -0.03866835368295193,
+  "wall_seconds": 85.769589387
+}

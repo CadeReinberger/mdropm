@@ -1,0 +1,14 @@
+[
+  {
+    "end": 22.5,
+    "gas_minimum_area_ratio": 0.8632532662926962,
+    "liquid_minimum_area_ratio": 0.6972999356192234,
+    "start": 21.0
+  },
+  {
+    "end": 24.0,
+    "gas_minimum_area_ratio": 0.8229472346366843,
+    "liquid_minimum_area_ratio": 0.6534840363490744,
+    "start": 22.5
+  }
+]
