@@ -1,6 +1,6 @@
-# mdropm — clean working copy
+# mdropm
 
-Self-contained simulation code, selected saved runs, and the scripts needed
+Simulation code, selected saved runs, and the scripts needed
 for canting plots, colormaps, line scans, and animations. This directory can be
 moved out of the original repository. Commands below are run from this folder;
 the scripts also accept absolute paths and work from other working directories.
