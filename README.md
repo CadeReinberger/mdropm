@@ -1,9 +1,6 @@
-# mdropm — clean working copy
+# mdropm
 
-Self-contained simulation code, selected saved runs, and the scripts needed
-for canting plots, colormaps, line scans, and animations. This directory can be
-moved out of the original repository. Commands below are run from this folder;
-the scripts also accept absolute paths and work from other working directories.
+Simulation Code for A Contact-Line and Evaporation Driven Model of a Drop Drying Between Canted Plates
 
 ## Environment
 
@@ -12,7 +9,7 @@ conda env create -f environment.yml
 conda activate mdropm-clean
 ```
 
-For plots and contact-line animations without FEniCS:
+For plots and contact-line animations (without FEniCS)
 
 ```bash
 python -m pip install -r requirements.txt
